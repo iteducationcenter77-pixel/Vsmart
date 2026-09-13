@@ -1,57 +1,26 @@
--- Institute Manager — Supabase schema
--- One JSONB table per collection. Only the institute admin can read or write.
--- The first account that signs in claims the admin role; nobody can claim it after that.
+-- Institute Manager — Supabase schema (fresh install)
+-- Every account is its own institute. Each data row carries `owner` (the account's user id)
+-- and Row Level Security lets an account see and change only its own rows.
+-- Run this whole file once in a new project's SQL editor.
 
-create table if not exists public.app_admins (
-  user_id    uuid primary key references auth.users (id) on delete cascade,
-  email      text,
-  created_at timestamptz not null default now()
+-- Profiles: one row per account, filled automatically at sign-up
+create table if not exists public.profiles (
+  id             uuid primary key references auth.users (id) on delete cascade,
+  email          text,
+  institute_name text,
+  full_name      text,
+  created_at     timestamptz not null default now()
 );
-alter table public.app_admins enable row level security;
--- No policies on app_admins: it is only reachable through the functions below.
+alter table public.profiles enable row level security;
+drop policy if exists "Read own profile" on public.profiles;
+create policy "Read own profile" on public.profiles for select to authenticated
+  using (id = (select auth.uid()));
+drop policy if exists "Update own profile" on public.profiles;
+create policy "Update own profile" on public.profiles for update to authenticated
+  using (id = (select auth.uid())) with check (id = (select auth.uid()));
+revoke all on public.profiles from anon;
 
-create or replace function public.is_admin()
-returns boolean
-language sql stable security definer
-set search_path = ''
-as $$
-  select exists (select 1 from public.app_admins where user_id = auth.uid());
-$$;
-
--- Lets the login screen know whether first-time setup is still needed.
-create or replace function public.admin_exists()
-returns boolean
-language sql stable security definer
-set search_path = ''
-as $$
-  select exists (select 1 from public.app_admins);
-$$;
-
--- Called after every sign-in. Makes the caller admin only if no admin exists yet.
-create or replace function public.claim_admin()
-returns boolean
-language plpgsql security definer
-set search_path = ''
-as $$
-begin
-  if auth.uid() is null then
-    return false;
-  end if;
-  lock table public.app_admins in exclusive mode;
-  if not exists (select 1 from public.app_admins) then
-    insert into public.app_admins (user_id, email) values (auth.uid(), auth.jwt() ->> 'email');
-  end if;
-  return exists (select 1 from public.app_admins where user_id = auth.uid());
-end;
-$$;
-
-revoke all on function public.is_admin()     from public, anon;
-revoke all on function public.claim_admin()  from public, anon;
-revoke all on function public.admin_exists() from public;
-grant execute on function public.is_admin()     to authenticated;
-grant execute on function public.claim_admin()  to authenticated;
-grant execute on function public.admin_exists() to anon, authenticated;
-
+-- Data tables: id + JSON document per row, scoped to the owner
 do $$
 declare
   t text;
@@ -59,15 +28,17 @@ begin
   foreach t in array array['students', 'courses', 'batches', 'payments', 'attendance', 'expenses', 'settings'] loop
     execute format(
       'create table if not exists public.%I (
-         id         text primary key,
+         owner      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+         id         text not null,
          data       jsonb not null,
-         updated_at timestamptz not null default now()
+         updated_at timestamptz not null default now(),
+         primary key (owner, id)
        )', t);
     execute format('alter table public.%I enable row level security', t);
-    execute format('drop policy if exists "Admin full access" on public.%I', t);
+    execute format('drop policy if exists "Owner full access" on public.%I', t);
     execute format(
-      'create policy "Admin full access" on public.%I for all to authenticated
-         using ((select public.is_admin())) with check ((select public.is_admin()))', t);
+      'create policy "Owner full access" on public.%I for all to authenticated
+         using (owner = (select auth.uid())) with check (owner = (select auth.uid()))', t);
     execute format('revoke all on public.%I from anon', t);
     if not exists (
       select 1 from pg_publication_tables
@@ -78,3 +49,29 @@ begin
   end loop;
 end;
 $$;
+
+-- On sign-up: save the profile and seed the institute name from the sign-up form
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql security definer
+set search_path = ''
+as $$
+declare
+  inst text := nullif(trim(coalesce(new.raw_user_meta_data ->> 'institute_name', '')), '');
+begin
+  insert into public.profiles (id, email, institute_name, full_name)
+  values (new.id, new.email, inst, coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name'))
+  on conflict (id) do nothing;
+  if inst is not null then
+    insert into public.settings (owner, id, data)
+    values (new.id, 'settings', jsonb_build_object('name', inst))
+    on conflict (owner, id) do nothing;
+  end if;
+  return new;
+end;
+$$;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();

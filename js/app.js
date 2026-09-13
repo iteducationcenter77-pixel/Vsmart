@@ -1,4 +1,4 @@
-/* App shell: boot, login, navigation, routing, theme. */
+/* App shell: boot, navigation, routing, theme. Sign-in screens live in auth.js. */
 (function () {
   const { icon, esc, $, $$ } = UI;
 
@@ -28,7 +28,8 @@
     dirty: false,     // set by pages holding unsaved input; blocks live re-render
     route: null,
     go(path) { location.hash = '#/' + path; },
-    rerender() { render(true); }
+    rerender() { render(true); },
+    start() { startApp(); }
   };
 
   // ── Theme (per-device preference) ──
@@ -109,7 +110,8 @@
       offline: ['warn', 'Offline · will sync later']
     };
     const [cls, text] = map[st];
-    $('#syncPill').innerHTML = `<span class="dot ${cls}"></span>${esc(text)}`;
+    const who = Store.userEmail();
+    $('#syncPill').innerHTML = `<span class="dot ${cls}"></span><span class="truncate" title="${esc(who)}">${esc(text)}</span>`;
   }
 
   function openMore() {
@@ -128,7 +130,8 @@
           <div class="li-main"><div class="li-title">${i.label}</div></div>${icon('chevronRight', 'faint')}</div>`).join('')}
         <div class="list-item clickable" data-logout>
           <div style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--danger-bg);color:var(--danger)">${icon('logout')}</div>
-          <div class="li-main"><div class="li-title" style="color:var(--danger)">Log out</div></div></div>
+          <div class="li-main"><div class="li-title" style="color:var(--danger)">Log out</div>
+            ${Store.userEmail() ? `<div class="li-sub">${esc(Store.userEmail())}</div>` : ''}</div></div>
       </div>
       <div class="muted small" style="margin-top:18px;display:flex;align-items:center;gap:8px">${$('#syncPill').innerHTML}</div>`,
       onMount(root, close) {
@@ -139,105 +142,34 @@
   }
 
   async function logout() {
-    const ok = await UI.confirmBox({ title: 'Log out?', message: 'You will need the admin password to open the app again.', okText: 'Log out', danger: false });
+    const ok = await UI.confirmBox({ title: 'Log out?', message: 'You will need to sign in again to open your institute.', okText: 'Log out', danger: false });
     if (!ok) return;
     try { await Store.auth.logout(); }
     catch (e) { UI.toast(e.message, 'error'); return; }
     $('#app').hidden = true;
     $('#view').innerHTML = '';
-    loginMode = null;
-    showLogin();
+    AuthView.show();
   }
 
-  // ── Login / first-time setup ──
-  let loginMode = null; // null = automatic, 'setup' or 'login' when the user toggles
-
-  function showLogin(notice) {
-    const el = $('#login');
-    const s = Store.settings();
-    const cloud = Store.mode === 'cloud';
-    const canSetup = Store.auth.needsSetup();
-    const setup = canSetup && loginMode !== 'login';
-    const modeNote = cloud
-      ? `${icon('cloud')} Cloud sync enabled`
-      : `${icon('device')} Local mode · data stays on this device`;
-    const emailField = (autocomplete) => `<div class="field"><label class="req">Admin email</label>
-      <input class="input" type="email" name="email" value="${esc(Store.lastEmail())}" required autocomplete="${autocomplete}"></div>`;
-
-    let form;
-    if (Store.initError) {
-      form = `<div class="empty" style="padding:8px 0">
-        <div class="empty-ic">${icon('alert')}</div>
-        <h4>Can't reach the server</h4>
-        <p>Connect to the internet the first time you open the app, then try again.</p>
-        <button class="btn btn-primary" onclick="location.reload()">Retry</button></div>`;
-    } else if (setup) {
-      form = `<form id="loginForm" class="stack">
-        <div class="field"><label class="req">Institute name</label><input class="input" name="name" value="${esc(s.name)}" required></div>
-        ${cloud ? emailField('username') : ''}
-        <div class="field"><label class="req">Create admin password</label><input class="input" type="password" name="pw" minlength="${cloud ? 6 : 4}" required autocomplete="new-password"></div>
-        <div class="field"><label class="req">Confirm password</label><input class="input" type="password" name="pw2" required autocomplete="new-password"></div>
-        <div class="form-error" id="loginErr"></div>
-        <button class="btn btn-primary btn-lg btn-block" type="submit">Create & continue</button>
-        ${cloud ? `<button type="button" class="btn btn-ghost btn-block" data-mode="login">Already created your account? Sign in</button>` : ''}</form>`;
-    } else {
-      form = `<form id="loginForm" class="stack">
-        ${cloud ? emailField('username') : ''}
-        <div class="field"><label>Admin password</label>
-          <div class="input-group">${icon('lock')}<input class="input" type="password" name="pw" required autocomplete="current-password" placeholder="Enter password"></div></div>
-        <div class="form-error" id="loginErr"></div>
-        <button class="btn btn-primary btn-lg btn-block" type="submit">Unlock</button>
-        ${cloud && canSetup ? `<button type="button" class="btn btn-ghost btn-block" data-mode="setup">First time? Create the admin account</button>` : ''}</form>`;
-    }
-
-    el.innerHTML = `<div class="login-card">
-      <div class="login-head">
-        <div class="brand-mark lg">${esc(UI.initials(s.name))}</div>
-        <h1>${setup ? 'Welcome' : esc(s.name)}</h1>
-        <p>${setup ? 'Set up your institute to get started' : 'Sign in to the admin panel'}</p>
-      </div>
-      ${notice ? `<div class="notice">${icon('checkCircle')}<span>${esc(notice)}</span></div>` : ''}
-      <div class="login-box">${form}</div>
-      <div class="login-foot row" style="justify-content:center;gap:6px">${modeNote}</div>
-    </div>`;
-    el.hidden = false;
-
-    $$('[data-mode]', el).forEach((b) => b.addEventListener('click', () => { loginMode = b.dataset.mode; showLogin(); }));
-    const f = $('#loginForm');
-    if (!f) return;
-    setTimeout(() => {
-      const target = f.email && !f.email.value ? f.email : f.querySelector('input[type=password]');
-      if (target && !setup) target.focus();
-    }, 50);
-    f.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const d = UI.formData(f);
-      const err = $('#loginErr');
-      const btn = f.querySelector('button[type=submit]');
-      err.textContent = '';
-      if (setup) {
-        const min = cloud ? 6 : 4;
-        if (d.pw.length < min) { err.textContent = `Use at least ${min} characters`; return; }
-        if (d.pw !== d.pw2) { err.textContent = 'Passwords do not match'; return; }
-      }
-      btn.disabled = true;
-      try {
-        if (setup) {
-          const r = await Store.auth.setup(d.pw, d.email, d.name);
-          if (r && r.needsConfirm) {
-            loginMode = 'login';
-            showLogin(`Account created. We sent a confirmation link to ${d.email} — open it, then sign in here.`);
-            return;
-          }
-          if (!cloud) await Store.saveSettings({ name: d.name || s.name });
-        } else {
-          await Store.auth.login(d.email, d.pw);
-        }
-        el.hidden = true;
-        startApp();
-      } catch (ex) {
-        err.textContent = ex.message;
-        btn.disabled = false;
+  // Accounts created with Google have no institute name yet — ask once.
+  function askInstituteName() {
+    UI.modal({
+      title: 'Name your institute', size: 'sm',
+      body: `<p class="muted" style="margin-bottom:16px">This appears on your dashboard and on every fee receipt. You can change it later in Settings.</p>
+        <form id="instForm"><div class="field"><label class="req">Institute name</label>
+          <input class="input" name="name" required placeholder="e.g. Bright Future Computer Centre"></div></form>`,
+      foot: `<button class="btn btn-primary" data-save>Save</button>`,
+      onMount(root, close) {
+        const f = $('#instForm', root);
+        const save = async () => {
+          const name = f.name.value.trim();
+          if (!name) { f.name.focus(); return; }
+          await Store.saveSettings({ name });
+          close();
+          UI.toast('Institute name saved');
+        };
+        $('[data-save]', root).addEventListener('click', save);
+        f.addEventListener('submit', (e) => { e.preventDefault(); save(); });
       }
     });
   }
@@ -263,14 +195,18 @@
     if (!location.hash || !location.hash.startsWith('#/')) history.replaceState(null, '', '#/dashboard');
     App.route = null;
     render(false);
+
+    if (Store.urlState().verified) UI.toast('Email verified — welcome to Institute Manager!');
+    Store.clearUrlState();
+    if (Store.mode === 'cloud' && !Store.hasInstituteName()) setTimeout(askInstituteName, 400);
   }
 
   async function boot() {
     applyTheme();
     await Store.init();
     $('#splash').hidden = true;
-    if (!Store.initError && Store.auth.isLoggedIn()) startApp();
-    else showLogin();
+    if (!Store.initError && Store.auth.isLoggedIn() && !Store.urlState().recovery) startApp();
+    else AuthView.show();
   }
 
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
