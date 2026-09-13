@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Institute Manager</title>
+  <meta name="description" content="Students, fees, billing and attendance for your computer institute.">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Boot splash -->
+  <div id="splash" class="splash">
+    <div class="brand-mark lg">IM</div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Login / first-time setup -->
+  <div id="login" class="login" hidden></div>
+
+  <!-- Main application shell -->
+  <div id="app" class="app" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-mark" id="brandMark">IM</div>
+        <div class="brand-text">
+          <div class="brand-name" id="brandName">Institute</div>
+          <div class="brand-sub">Management</div>
+        </div>
+      </div>
+      <nav class="side-nav" id="sideNav"></nav>
+      <div class="sidebar-foot">
+        <div class="sync-pill" id="syncPill"></div>
+        <button class="btn btn-ghost btn-block" data-action="logout">
+          <span data-icon="logout"></span> Log out
+        </button>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="brand-mark sm" id="brandMarkSm">IM</div>
+          <div class="topbar-title" id="topTitle">Dashboard</div>
+        </div>
+        <div class="topbar-right">
+          <button class="icon-btn" data-nav="collect" aria-label="Collect fee"><span data-icon="wallet"></span></button>
+          <button class="icon-btn" data-nav="settings" aria-label="Settings"><span data-icon="settings"></span></button>
+        </div>
+      </header>
+      <main id="view" class="view"></main>
+    </div>
+
+    <nav class="bottom-nav" id="bottomNav"></nav>
+  </div>
+
+  <div id="overlays"></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/logic.js"></script>
+  <script src="js/pages/dashboard.js"></script>
+  <script src="js/pages/students.js"></script>
+  <script src="js/pages/fees.js"></script>
+  <script src="js/pages/attendance.js"></script>
+  <script src="js/pages/manage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
