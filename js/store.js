@@ -128,7 +128,9 @@
     if (/invalid login credentials/i.test(m)) return 'Incorrect email or password.';
     if (/email not confirmed/i.test(m)) return 'Please verify your email before signing in.';
     if (/already registered|already been registered|already exists/i.test(m)) return 'An account with this email already exists. Sign in instead.';
-    if (/rate limit|too many|security purposes/i.test(m)) return 'Too many attempts. Please wait a minute and try again.';
+    if (/email rate limit/i.test(m)) return 'Too many emails were sent in the last hour. Please try again later.';
+    if (/security purposes|only request this after/i.test(m)) return 'Please wait a minute before requesting another email.';
+    if (/rate limit|too many/i.test(m)) return 'Too many attempts. Please wait a few minutes and try again.';
     if (/provider is not enabled|unsupported provider/i.test(m)) return 'Google sign-in is not set up yet. Please use email and password.';
     if (/should be different|same password/i.test(m)) return 'Choose a password different from your current one.';
     if (/password/i.test(m) && /least|short|weak|characters/i.test(m)) return 'Password must be at least 6 characters.';
