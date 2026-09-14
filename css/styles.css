@@ -200,6 +200,17 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
 .side-user:empty { display: none; }
 .side-user .li-title { font-size: 13px; }
 .avatar.sm { width: 32px; height: 32px; font-size: 12px; }
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-mark.has-logo { background: #fff; border: 1px solid var(--border); overflow: hidden; }
+.top-avatar { border: 0; padding: 0; cursor: pointer; font-family: inherit; }
+.logo-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.logo-preview {
+  width: 72px; height: 72px; border-radius: 16px; flex: none; overflow: hidden;
+  display: grid; place-items: center; background: var(--surface-2); border: 1px dashed var(--border-strong);
+  color: var(--muted); font-weight: 700; font-size: 20px;
+}
+.logo-preview.has-logo { background: #fff; border-style: solid; border-color: var(--border); }
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
 .sidebar-brand .sidebar-close { display: none; margin-left: auto; }
 .scrim { display: none; }
 .sync-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
@@ -443,6 +454,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .receipt .r-head { display: flex; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 2px solid #101828; }
 .receipt .r-inst { display: flex; gap: 14px; }
 .receipt .r-inst .brand-mark { background: #4f46e5; color: #fff; width: 48px; height: 48px; font-size: 17px; }
+.receipt .r-logo { width: 60px; height: 60px; object-fit: contain; border-radius: 10px; flex: none; }
 .receipt h2 { font-size: 20px; }
 .receipt .r-muted { color: #667085; font-size: 12.5px; }
 .receipt .r-title { text-align: right; }
@@ -487,6 +499,10 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   body.drawer-open .scrim { opacity: 1; pointer-events: auto; }
   body.drawer-open { overflow: hidden; }
   .menu-btn { margin-left: -8px; }
+  .desktop-only { display: none !important; }
+  /* Page title shows in the top bar only after the big heading scrolls away */
+  .topbar-title { opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s; }
+  body.scrolled .topbar-title { opacity: 1; transform: none; }
   .main { margin-left: 0; }
   .topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;

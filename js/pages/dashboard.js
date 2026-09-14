@@ -121,8 +121,8 @@ window.Pages = window.Pages || {};
         <div class="page-head">
           <div><h1>${greet}</h1><p class="sub">${UI.weekday(today)}, ${UI.fmtDate(today)}</p></div>
           <div class="page-actions">
-            <button class="btn" data-go-add>${icon('plus')} Add student</button>
-            <button class="btn btn-primary" data-nav="collect">${icon('wallet')} Collect fee</button>
+            <button class="btn desktop-only" data-go-add>${icon('plus')} Add student</button>
+            <button class="btn btn-primary desktop-only" data-nav="collect">${icon('wallet')} Collect fee</button>
           </div>
         </div>
         ${onboarding}
@@ -130,7 +130,7 @@ window.Pages = window.Pages || {};
           ${kpi('users', 'Active students', num(active.length), newThisMonth ? `+${newThisMonth} admitted this month` : 'No new admissions this month')}
           ${kpi('wallet', `Collected · ${UI.MONTHS[Number(month.slice(5)) - 1]}`, money(collected), `${monthPayments.length} payment${monthPayments.length === 1 ? '' : 's'} this month`)}
           ${kpi('alert', 'Pending dues', money(totalDue), `${withDues.length} student${withDues.length === 1 ? '' : 's'} with dues`)}
-          ${kpi('calendar', 'Today\'s attendance', att.marked ? `${att.present}<span class="muted" style="font-size:.6em;font-weight:500"> / ${att.marked}</span>` : '—', att.marked ? `${Math.round((att.present / att.marked) * 100)}% present` : 'Not marked yet')}
+          ${kpi('calendar', 'Attendance', att.marked ? `${att.present}<span class="muted" style="font-size:.6em;font-weight:500"> / ${att.marked}</span>` : '—', att.marked ? `${Math.round((att.present / att.marked) * 100)}% present today` : 'Not marked today')}
         </div>
 
         <div class="two-col" style="margin-bottom:16px">

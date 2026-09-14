@@ -78,7 +78,10 @@
       view.innerHTML = UI.empty('alert', 'Something went wrong', e.message);
     }
     window.scrollTo(0, keepScroll && !changed ? y : 0);
+    onScroll();
   }
+
+  function onScroll() { document.body.classList.toggle('scrolled', window.scrollY > 48); }
 
   function onDataChange() {
     refreshChrome();
@@ -100,7 +103,12 @@
     const s = Store.settings();
     const ini = UI.initials(s.name);
     $('#brandName').textContent = s.name;
-    $('#brandMark').textContent = ini;
+    const mark = s.logo ? `<img src="${esc(s.logo)}" alt="">` : esc(ini);
+    ['#brandMark', '#topAvatar'].forEach((sel) => {
+      const el = $(sel);
+      el.classList.toggle('has-logo', !!s.logo);
+      el.innerHTML = mark;
+    });
     const email = Store.userEmail();
     $('#sideUser').innerHTML = email ? `<div class="avatar sm">${esc(email[0].toUpperCase())}</div>
       <div class="li-main"><div class="li-sub">Signed in as</div><div class="li-title">${esc(email)}</div></div>` : '';
@@ -156,11 +164,19 @@
   async function logout() {
     const ok = await UI.confirmBox({ title: 'Log out?', message: 'You will need to sign in again to open your institute.', okText: 'Log out', danger: false });
     if (!ok) return;
+    if (Store.pendingCount()) {
+      await Store.syncNow();
+      const left = Store.pendingCount();
+      if (left && !(await UI.confirmBox({
+        title: 'Unsynced changes',
+        message: `${left} change${left === 1 ? " hasn't" : "s haven't"} reached the server yet (no internet?). Log out anyway and lose ${left === 1 ? 'it' : 'them'}?`,
+        okText: 'Log out anyway'
+      }))) return;
+    }
     try { await Store.auth.logout(); }
     catch (e) { UI.toast(e.message, 'error'); return; }
-    $('#app').hidden = true;
-    $('#view').innerHTML = '';
-    AuthView.show();
+    // Fresh page load so nothing from the previous account stays in memory
+    location.replace(location.pathname);
   }
 
   // Accounts created with Google have no institute name yet — ask once.
@@ -195,6 +211,7 @@
       started = true;
       buildNav();
       bindDrawerSwipe();
+      window.addEventListener('scroll', onScroll, { passive: true });
       Store.onChange(onDataChange);
       window.addEventListener('hashchange', () => render(false));
       document.addEventListener('click', (e) => {

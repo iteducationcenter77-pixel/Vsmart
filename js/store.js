@@ -390,9 +390,12 @@
     isLoggedIn() { return !!this.user; },
 
     async logout() {
-      if (this.queue.length) throw new Error('Some changes have not synced yet. Connect to the internet, wait a moment, then log out.');
       const key = this.user ? this.key() : null;
-      await this.sb.auth.signOut().catch(() => {});
+      try { this.sb.auth.stopAutoRefresh(); } catch (e) {}
+      try { await this.sb.auth.signOut(); } catch (e) {}
+      // supabase-js keeps the saved session if the sign-out request fails (e.g. weak mobile
+      // network), which silently logs the old account back in on refresh — remove it ourselves.
+      try { Object.keys(localStorage).filter((k) => /^sb-.+-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
       localStorage.removeItem(LAST_USER);
       if (key) await idb.del(key).catch(() => {});
       this.stop();
@@ -444,6 +447,8 @@
       return B.pendingCount() ? 'pending' : 'synced';
     },
     userEmail() { return B.userEmail(); },
+    pendingCount() { return B.pendingCount(); },
+    async syncNow() { if (CLOUD) await Cloud.flush(); },
     lastEmail() { try { return localStorage.getItem('ims.lastEmail') || ''; } catch (e) { return ''; } },
     urlState() {
       if (!CLOUD) return {};

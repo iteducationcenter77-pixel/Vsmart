@@ -207,7 +207,7 @@ window.Pages = window.Pages || {};
         </div>
         <div class="receipt">
           <div class="r-head">
-            <div class="r-inst"><div class="brand-mark">${esc(UI.initials(st.name))}</div>
+            <div class="r-inst">${st.logo ? `<img class="r-logo" src="${esc(st.logo)}" alt="">` : `<div class="brand-mark">${esc(UI.initials(st.name))}</div>`}
               <div><h2>${esc(st.name)}</h2>
                 ${st.tagline ? `<div class="r-muted">${esc(st.tagline)}</div>` : ''}
                 ${st.address ? `<div class="r-muted">${esc(st.address)}</div>` : ''}
@@ -270,7 +270,7 @@ window.Pages = window.Pages || {};
         <div class="page-head">
           <div><h1>Payments</h1><p class="sub">${ps.all ? 'All time' : UI.monthLabel(ps.month, true)} · ${list.length} receipt${list.length === 1 ? '' : 's'} · <b class="money" style="color:var(--text)">${money(total)}</b></p></div>
           <div class="page-actions"><button class="btn" data-csv>${icon('download')} <span class="hide-sm">Export</span></button>
-            <button class="btn btn-primary" data-nav="collect">${icon('plus')} Collect fee</button></div>
+            <button class="btn btn-primary desktop-only" data-nav="collect">${icon('plus')} Collect fee</button></div>
         </div>
         <div class="toolbar">
           <div class="input-group">${icon('search')}<input class="input" id="payQ" placeholder="Search student or receipt no." value="${esc(ps.q)}"></div>

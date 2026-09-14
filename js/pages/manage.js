@@ -10,6 +10,36 @@ window.Pages = window.Pages || {};
   const anyCount = (field, id) => Store.all('students').filter((s) => s[field] === id).length;
   const cur = () => esc(Store.settings().currency);
 
+  // Shrink an uploaded logo (max 320px) into a small data URL so it syncs quickly.
+  function readLogo(file) {
+    return new Promise((resolve, reject) => {
+      if (!/^image\//.test(file.type)) { reject(new Error('Please choose an image file (PNG or JPG).')); return; }
+      if (file.size > 8 * 1024 * 1024) { reject(new Error('That image is too large. Use one under 8 MB.')); return; }
+      const src = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(src);
+        const iw = img.naturalWidth || 320, ih = img.naturalHeight || 320;
+        const scale = Math.min(1, 320 / Math.max(iw, ih));
+        const w = Math.max(1, Math.round(iw * scale)), h = Math.max(1, Math.round(ih * scale));
+        const encode = (type, q, whiteBg) => {
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const g = c.getContext('2d');
+          if (whiteBg) { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); }
+          g.drawImage(img, 0, 0, w, h);
+          return c.toDataURL(type, q);
+        };
+        let data = encode('image/png');
+        if (data.length > 180000) data = encode('image/webp', 0.9);
+        if (data.length > 180000) data = encode('image/jpeg', 0.85, true); // e.g. Safari can't encode WebP
+        resolve(data);
+      };
+      img.onerror = () => { URL.revokeObjectURL(src); reject(new Error('Could not read that image.')); };
+      img.src = src;
+    });
+  }
+
   // ───────────── Courses & batches ─────────────
   function courseForm(c) {
     const isNew = !c;
@@ -212,6 +242,19 @@ window.Pages = window.Pages || {};
           <div class="card">
             <div class="card-head"><h3>Institute profile</h3><span class="muted small">Shown on receipts</span></div>
             <form id="profForm" class="card-body form-grid">
+              <div class="field full"><label>Logo</label>
+                <div class="logo-row">
+                  <div class="logo-preview ${s.logo ? 'has-logo' : ''}" id="logoPreview">${s.logo ? `<img src="${esc(s.logo)}" alt="Institute logo">` : esc(UI.initials(s.name))}</div>
+                  <div class="stack" style="gap:8px">
+                    <div class="row-wrap">
+                      <label class="btn btn-sm" style="cursor:pointer">${icon('upload')} ${s.logo ? 'Change logo' : 'Upload logo'}
+                        <input type="file" id="logoIn" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>
+                      ${s.logo ? `<button type="button" class="btn btn-sm btn-ghost" id="logoRm">Remove</button>` : ''}
+                    </div>
+                    <span class="hint">PNG or JPG, square works best. Printed on fee receipts and shown in the app.</span>
+                  </div>
+                </div>
+              </div>
               ${fld('name', 'Institute name', 'full')}${fld('tagline', 'Tagline', 'full')}${fld('address', 'Address', 'full')}
               ${fld('phone', 'Phone')}${fld('email', 'Email')}
               ${fld('receiptPrefix', 'Receipt number prefix')}${fld('studentPrefix', 'Student ID prefix')}
@@ -266,7 +309,30 @@ window.Pages = window.Pages || {};
         </div>`;
 
       const pf = $('#profForm', el);
-      pf.addEventListener('input', () => { App.dirty = true; });
+      pf.addEventListener('input', (e) => { if (e.target.type !== 'file') App.dirty = true; });
+
+      $('#logoIn', el).addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+          const data = await readLogo(file);
+          await Store.saveSettings({ logo: data });
+          const box = $('#logoPreview', el);
+          box.classList.add('has-logo');
+          box.innerHTML = `<img src="${data}" alt="Institute logo">`;
+          UI.toast('Logo updated — it will appear on receipts');
+        } catch (ex) { UI.toast(ex.message, 'error'); }
+      });
+      const rm = $('#logoRm', el);
+      if (rm) rm.addEventListener('click', async () => {
+        await Store.saveSettings({ logo: '' });
+        const box = $('#logoPreview', el);
+        box.classList.remove('has-logo');
+        box.textContent = UI.initials(Store.settings().name);
+        rm.remove();
+        UI.toast('Logo removed');
+      });
       $('#profSave', el).addEventListener('click', async () => {
         const d = UI.formData(pf);
         if (!d.name) { UI.toast('Institute name is required', 'error'); return; }
