@@ -195,7 +195,13 @@ svg.i { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none;
 .nav-item.active { background: var(--accent-weak); color: var(--accent-ink); }
 .nav-item.active svg.i { stroke: var(--accent); }
 .sidebar-foot { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border); }
-.sync-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding: 0 10px; }
+.sync-pill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); padding: 0 10px; min-width: 0; }
+.side-user { display: flex; align-items: center; gap: 10px; padding: 2px 8px; min-width: 0; }
+.side-user:empty { display: none; }
+.side-user .li-title { font-size: 13px; }
+.avatar.sm { width: 32px; height: 32px; font-size: 12px; }
+.sidebar-brand .sidebar-close { display: none; margin-left: auto; }
+.scrim { display: none; }
 .sync-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
 .sync-pill .dot.on { background: var(--success); }
 .sync-pill .dot.warn { background: var(--warning); }
@@ -461,7 +467,26 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .two-col { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 860px) {
-  .sidebar { display: none; }
+  /* Sidebar becomes a slide-out drawer */
+  .sidebar {
+    width: min(86vw, 320px); z-index: 70; border-right: 0;
+    padding: calc(16px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+    transform: translateX(-104%); transition: transform .28s cubic-bezier(.2, .8, .2, 1);
+    box-shadow: var(--shadow-lg); visibility: hidden;
+  }
+  body.drawer-open .sidebar { transform: none; visibility: visible; }
+  .sidebar-brand { padding: 4px 4px 18px 8px; }
+  .sidebar-brand .sidebar-close { display: grid; }
+  .nav-item { padding: 12px; font-size: 15px; border-radius: 10px; }
+  .nav-item svg.i { width: 20px; height: 20px; }
+  .scrim {
+    display: block; position: fixed; inset: 0; z-index: 65;
+    background: rgba(16, 24, 40, .5); backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  body.drawer-open .scrim { opacity: 1; pointer-events: auto; }
+  body.drawer-open { overflow: hidden; }
+  .menu-btn { margin-left: -8px; }
   .main { margin-left: 0; }
   .topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
@@ -510,6 +535,30 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   .list-item, .fee-line, .att-row { padding-left: 16px; padding-right: 16px; }
   .card-head, .card-body { padding-left: 16px; padding-right: 16px; }
   .hide-sm { display: none !important; }
+
+  /* Tables marked .stack turn into cards on phones */
+  .table-wrap:has(> .table.stack) { overflow: visible; }
+  .table.stack thead { display: none; }
+  .table.stack, .table.stack tbody, .table.stack tfoot { display: block; }
+  .table.stack tr {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .table.stack tbody tr:last-child { border-bottom: 0; }
+  .table.stack td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; font-size: 14px; }
+  .table.stack td[data-label]::before { content: attr(data-label); display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); margin-bottom: 1px; }
+  .table.stack td.primary { grid-column: 1 / -1; grid-row: 1; font-size: 14.5px; }
+  .table.stack tr:has(> td.pin) td.primary { grid-column: 1 / 3; }
+  .table.stack td.pin { grid-column: 3; grid-row: 1; justify-self: end; }
+  .table.stack td.span { grid-column: 1 / -1; }
+  .table.stack td.act { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+  .table.stack td.act .btn { width: 100%; }
+  .table.stack td:empty { display: none; }
+  .table.stack tfoot tr { background: var(--surface-2); border-top: 1px solid var(--border); border-bottom: 0; border-radius: 0 0 var(--radius) var(--radius); }
+  .table.stack tfoot td { background: none; border: 0; }
+  .table.stack tfoot td:last-child:not(:empty) { grid-column: -2 / -1; text-align: right; }
+  .table.stack tbody tr.clickable:hover td { background: none; }
+  .table.stack tbody tr.clickable:active { background: var(--surface-2); }
   .receipt .r-head { flex-direction: column; }
   .receipt .r-title { text-align: left; }
   .receipt .r-meta { grid-template-columns: 1fr; }

@@ -36,9 +36,11 @@
           <div class="brand-name" id="brandName">Institute</div>
           <div class="brand-sub">Institute Manager</div>
         </div>
+        <button class="icon-btn sidebar-close" data-drawer-close aria-label="Close menu"><span data-icon="x"></span></button>
       </div>
       <nav class="side-nav" id="sideNav"></nav>
       <div class="sidebar-foot">
+        <div class="side-user" id="sideUser"></div>
         <div class="sync-pill" id="syncPill"></div>
         <button class="btn btn-ghost btn-block" data-action="logout">
           <span data-icon="logout"></span> Log out
@@ -49,7 +51,7 @@
     <div class="main">
       <header class="topbar">
         <div class="topbar-left">
-          <div class="brand-mark sm" id="brandMarkSm">IM</div>
+          <button class="icon-btn menu-btn" data-drawer aria-label="Open menu"><span data-icon="menu"></span></button>
           <div class="topbar-title" id="topTitle">Dashboard</div>
         </div>
         <div class="topbar-right">
@@ -61,6 +63,7 @@
     </div>
 
     <nav class="bottom-nav" id="bottomNav"></nav>
+    <div class="scrim" id="scrim" data-drawer-close></div>
   </div>
 
   <div id="overlays"></div>

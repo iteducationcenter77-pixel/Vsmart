@@ -238,15 +238,15 @@ window.Pages = window.Pages || {};
           ${d.total > 0 && wa ? `<div class="card card-pad row" style="margin-bottom:16px;flex-wrap:wrap">
               <div class="li-main"><div class="strong">${money(d.total)} pending</div><div class="muted small">Send a polite reminder on WhatsApp</div></div>
               <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(reminder)}">${icon('message')} Send reminder</a></div>` : ''}
-          <div class="card"><div class="table-wrap"><table class="table">
+          <div class="card"><div class="table-wrap"><table class="table stack">
             <thead><tr><th>Month</th><th class="num">Fee</th><th class="num">Paid</th><th class="num">Due</th><th>Status</th></tr></thead>
             <tbody>
-              ${admFee ? `<tr><td>Admission fee</td><td class="num">${money(admFee)}</td><td class="num">${money(admPaid)}</td><td class="num">${money(Math.max(0, admFee - admPaid))}</td><td>${sb(admPaid >= admFee ? 'paid' : admPaid > 0 ? 'partial' : 'unpaid')}</td></tr>` : ''}
-              ${rows.slice().reverse().map((r) => `<tr><td>${UI.monthLabel(r.month, true)}${r.advance ? ' <span class="badge badge-accent plain">Advance</span>' : ''}</td>
-                <td class="num">${money(r.fee)}</td><td class="num">${money(r.paid)}</td><td class="num">${r.due ? `<span style="color:var(--danger)">${money(r.due)}</span>` : money(0)}</td><td>${sb(r.status)}</td></tr>`).join('')}
-              ${!rows.length && !admFee ? `<tr><td colspan="5">${UI.empty('calendar', 'Nothing billed yet', 'Monthly fees start from the admission month.')}</td></tr>` : ''}
+              ${admFee ? `<tr><td class="primary">Admission fee</td><td class="num" data-label="Fee">${money(admFee)}</td><td class="num" data-label="Paid">${money(admPaid)}</td><td class="num" data-label="Due">${money(Math.max(0, admFee - admPaid))}</td><td class="pin">${sb(admPaid >= admFee ? 'paid' : admPaid > 0 ? 'partial' : 'unpaid')}</td></tr>` : ''}
+              ${rows.slice().reverse().map((r) => `<tr><td class="primary">${UI.monthLabel(r.month, true)}${r.advance ? ' <span class="badge badge-accent plain">Advance</span>' : ''}</td>
+                <td class="num" data-label="Fee">${money(r.fee)}</td><td class="num" data-label="Paid">${money(r.paid)}</td><td class="num" data-label="Due">${r.due ? `<span style="color:var(--danger)">${money(r.due)}</span>` : money(0)}</td><td class="pin">${sb(r.status)}</td></tr>`).join('')}
+              ${!rows.length && !admFee ? `<tr><td colspan="5" class="span">${UI.empty('calendar', 'Nothing billed yet', 'Monthly fees start from the admission month.')}</td></tr>` : ''}
             </tbody>
-            <tfoot><tr><td>Total</td><td class="num">${money(tFee)}</td><td class="num">${money(tPaid)}</td><td class="num">${money(d.total)}</td><td></td></tr></tfoot>
+            <tfoot><tr><td class="primary">Total</td><td class="num" data-label="Fee">${money(tFee)}</td><td class="num" data-label="Paid">${money(tPaid)}</td><td class="num" data-label="Due">${money(d.total)}</td><td></td></tr></tfoot>
           </table></div></div>
           ${end ? `<p class="muted small" style="margin-top:10px">Course ends ${UI.monthLabel(end, true)}. Monthly fees are not charged after that.</p>` : ''}`;
       } else if (tab === 'payments') {

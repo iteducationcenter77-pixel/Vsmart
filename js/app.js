@@ -19,7 +19,7 @@
     { id: 'students', label: 'Students', icon: 'users' },
     { id: 'attendance', label: 'Attendance', icon: 'calendar' },
     { id: 'collect', label: 'Fees', icon: 'wallet' },
-    { id: 'more', label: 'More', icon: 'grid' }
+    { id: 'more', label: 'Menu', icon: 'menu' }
   ];
   // Sub-pages highlight their parent in the nav
   const PARENT = { student: 'students', receipt: 'payments' };
@@ -101,7 +101,9 @@
     const ini = UI.initials(s.name);
     $('#brandName').textContent = s.name;
     $('#brandMark').textContent = ini;
-    $('#brandMarkSm').textContent = ini;
+    const email = Store.userEmail();
+    $('#sideUser').innerHTML = email ? `<div class="avatar sm">${esc(email[0].toUpperCase())}</div>
+      <div class="li-main"><div class="li-sub">Signed in as</div><div class="li-title">${esc(email)}</div></div>` : '';
     const st = Store.syncState();
     const map = {
       local: ['', 'Local mode · this device'],
@@ -114,31 +116,41 @@
     $('#syncPill').innerHTML = `<span class="dot ${cls}"></span><span class="truncate" title="${esc(who)}">${esc(text)}</span>`;
   }
 
-  function openMore() {
-    const items = [
-      { id: 'payments', label: 'Payments & Receipts', icon: 'receipt' },
-      { id: 'reports', label: 'Monthly Reports', icon: 'chart' },
-      { id: 'courses', label: 'Courses & Batches', icon: 'layers' },
-      { id: 'expenses', label: 'Expenses', icon: 'expense' },
-      { id: 'settings', label: 'Settings', icon: 'settings' }
-    ];
-    UI.modal({
-      title: 'More',
-      body: `<div class="list" style="margin:-8px -22px">
-        ${items.map((i) => `<div class="list-item clickable" data-go="${i.id}">
-          <div style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2)">${icon(i.icon)}</div>
-          <div class="li-main"><div class="li-title">${i.label}</div></div>${icon('chevronRight', 'faint')}</div>`).join('')}
-        <div class="list-item clickable" data-logout>
-          <div style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--danger-bg);color:var(--danger)">${icon('logout')}</div>
-          <div class="li-main"><div class="li-title" style="color:var(--danger)">Log out</div>
-            ${Store.userEmail() ? `<div class="li-sub">${esc(Store.userEmail())}</div>` : ''}</div></div>
-      </div>
-      <div class="muted small" style="margin-top:18px;display:flex;align-items:center;gap:8px">${$('#syncPill').innerHTML}</div>`,
-      onMount(root, close) {
-        $$('[data-go]', root).forEach((el) => el.addEventListener('click', () => { close(); App.go(el.dataset.go); }));
-        $('[data-logout]', root).addEventListener('click', () => { close(); logout(); });
-      }
-    });
+  // ── Mobile slide-out menu (the sidebar becomes a drawer under 860px) ──
+  const body = document.body;
+  const drawer = {
+    isOpen: () => body.classList.contains('drawer-open'),
+    open() {
+      if (drawer.isOpen() || window.innerWidth > 860) return;
+      body.classList.add('drawer-open');
+      history.pushState({ drawer: true }, '', location.href); // Android Back closes the menu
+    },
+    close() {
+      if (!drawer.isOpen()) return;
+      body.classList.remove('drawer-open');
+      if (history.state && history.state.drawer) history.back();
+    },
+    // Close and open a page, replacing the menu's history entry so Back behaves
+    closeTo(path) {
+      body.classList.remove('drawer-open');
+      if (history.state && history.state.drawer) { history.replaceState(null, '', '#/' + path); render(false); }
+      else App.go(path);
+    }
+  };
+  window.addEventListener('popstate', () => {
+    if (drawer.isOpen() && !(history.state && history.state.drawer)) body.classList.remove('drawer-open');
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') drawer.close(); });
+  window.addEventListener('resize', () => { if (window.innerWidth > 860 && drawer.isOpen()) drawer.close(); });
+
+  function bindDrawerSwipe() {
+    const side = $('.sidebar');
+    let startX = null;
+    side.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    side.addEventListener('touchmove', (e) => {
+      if (startX != null && e.touches[0].clientX - startX < -60) { startX = null; drawer.close(); }
+    }, { passive: true });
+    side.addEventListener('touchend', () => { startX = null; }, { passive: true });
   }
 
   async function logout() {
@@ -182,13 +194,15 @@
     if (!started) {
       started = true;
       buildNav();
+      bindDrawerSwipe();
       Store.onChange(onDataChange);
       window.addEventListener('hashchange', () => render(false));
       document.addEventListener('click', (e) => {
         const nav = e.target.closest('[data-nav]');
-        if (nav) { App.go(nav.dataset.nav); return; }
-        if (e.target.closest('[data-more]')) { openMore(); return; }
-        if (e.target.closest('[data-action=logout]')) logout();
+        if (nav) { if (drawer.isOpen()) drawer.closeTo(nav.dataset.nav); else App.go(nav.dataset.nav); return; }
+        if (e.target.closest('[data-more], [data-drawer]')) { drawer.open(); return; }
+        if (e.target.closest('[data-drawer-close]')) { drawer.close(); return; }
+        if (e.target.closest('[data-action=logout]')) { drawer.close(); logout(); }
       });
     }
     refreshChrome();

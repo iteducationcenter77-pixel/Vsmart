@@ -279,14 +279,14 @@ window.Pages = window.Pages || {};
           <button class="chip ${ps.all ? 'on' : ''}" id="payAll">All time</button>
         </div>
         ${byMode.length ? `<div class="row-wrap" style="margin-bottom:16px">${byMode.map(([m, v]) => `<span class="badge plain">${m}: <b class="money">${money(v)}</b></span>`).join('')}</div>` : ''}
-        <div class="card">${list.length ? `<div class="table-wrap"><table class="table">
+        <div class="card">${list.length ? `<div class="table-wrap"><table class="table stack">
           <thead><tr><th>Receipt</th><th>Date</th><th>Student</th><th class="hide-sm">For</th><th class="hide-sm">Mode</th><th class="num">Amount</th></tr></thead>
           <tbody>${list.map((p) => `<tr class="clickable" data-id="${p.id}">
-            <td class="nowrap strong">${esc(p.receiptNo)}</td><td class="nowrap">${UI.fmtDate(p.date)}</td>
-            <td><div class="strong">${esc(p.studentName)}</div><div class="small muted">${esc(p.studentCode || '')}</div></td>
+            <td class="nowrap strong" data-label="Receipt">${esc(p.receiptNo)}</td><td class="nowrap" data-label="Date">${UI.fmtDate(p.date)}</td>
+            <td class="primary"><div class="strong">${esc(p.studentName)}</div><div class="small muted">${esc(p.studentCode || '')}</div></td>
             <td class="hide-sm muted" style="max-width:260px">${esc(forText(p))}</td><td class="hide-sm">${esc(p.mode)}</td>
-            <td class="num strong">${money(p.total)}</td></tr>`).join('')}</tbody>
-          <tfoot><tr><td colspan="3">Total</td><td class="hide-sm"></td><td class="hide-sm"></td><td class="num">${money(total)}</td></tr></tfoot>
+            <td class="num strong" data-label="Amount">${money(p.total)}</td></tr>`).join('')}</tbody>
+          <tfoot><tr><td colspan="3" class="strong">Total</td><td class="hide-sm"></td><td class="hide-sm"></td><td class="num">${money(total)}</td></tr></tfoot>
         </table></div>` : UI.empty('receipt', 'No payments found', 'Try another month or clear the filters.')}</div>`;
 
       $$('[data-id]', el).forEach((r) => r.addEventListener('click', () => App.go('receipt/' + r.dataset.id)));
@@ -354,15 +354,15 @@ window.Pages = window.Pages || {};
         <div class="chips no-print" style="margin-bottom:16px">
           ${[['all', 'All', rows.length], ['unpaid', 'Unpaid', cnt('unpaid')], ['partial', 'Partial', cnt('partial')], ['paid', 'Paid', cnt('paid')]].map(([k, t, n]) => `<button class="chip ${rs.filter === k ? 'on' : ''}" data-f="${k}">${t} <span class="count">${n}</span></button>`).join('')}
         </div>
-        <div class="card">${shown.length ? `<div class="table-wrap"><table class="table">
+        <div class="card">${shown.length ? `<div class="table-wrap"><table class="table stack">
           <thead><tr><th>Student</th><th class="hide-sm">Course</th><th class="num">Fee</th><th class="num">Paid</th><th class="num">Due</th><th>Status</th><th class="no-print"></th></tr></thead>
           <tbody>${shown.map((r) => `<tr class="clickable" data-sid="${r.s.id}">
-            <td><div class="strong">${esc(r.s.name)}</div><div class="small muted">${esc(r.s.code || '')}${r.s.phone ? ' · ' + esc(r.s.phone) : ''}</div></td>
+            <td class="primary"><div class="strong">${esc(r.s.name)}</div><div class="small muted">${esc(r.s.code || '')}${r.s.phone ? ' · ' + esc(r.s.phone) : ''}</div></td>
             <td class="hide-sm">${esc((Logic.courseOf(r.s) || {}).name || '—')}</td>
-            <td class="num">${money(r.fee)}</td><td class="num">${money(r.paid)}</td>
-            <td class="num" style="${r.due ? 'color:var(--danger);font-weight:600' : ''}">${money(r.due)}</td><td>${sb(r.status)}</td>
-            <td class="no-print right">${r.due ? `<button class="btn btn-sm" data-collect="${r.s.id}">Collect</button>` : ''}</td></tr>`).join('')}</tbody>
-          <tfoot><tr><td>Total</td><td class="hide-sm"></td><td class="num">${money(shown.reduce((a, r) => a + r.fee, 0))}</td><td class="num">${money(shown.reduce((a, r) => a + r.paid, 0))}</td><td class="num">${money(shown.reduce((a, r) => a + r.due, 0))}</td><td></td><td class="no-print"></td></tr></tfoot>
+            <td class="num" data-label="Fee">${money(r.fee)}</td><td class="num" data-label="Paid">${money(r.paid)}</td>
+            <td class="num" data-label="Due" style="${r.due ? 'color:var(--danger);font-weight:600' : ''}">${money(r.due)}</td><td class="pin">${sb(r.status)}</td>
+            <td class="no-print right act">${r.due ? `<button class="btn btn-sm" data-collect="${r.s.id}">Collect</button>` : ''}</td></tr>`).join('')}</tbody>
+          <tfoot><tr><td class="primary">Total</td><td class="hide-sm"></td><td class="num" data-label="Fee">${money(shown.reduce((a, r) => a + r.fee, 0))}</td><td class="num" data-label="Paid">${money(shown.reduce((a, r) => a + r.paid, 0))}</td><td class="num" data-label="Due">${money(shown.reduce((a, r) => a + r.due, 0))}</td><td></td><td class="no-print"></td></tr></tfoot>
         </table></div>` : UI.empty('chart', 'Nothing to show', rows.length ? 'No students match this filter.' : 'No students were billed in this month.')}</div>`;
 
       $$('[data-m]', el).forEach((b) => b.addEventListener('click', () => { rs.month = UI.addMonths(rs.month, Number(b.dataset.m)); this.render(el); }));
