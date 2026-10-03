@@ -116,6 +116,10 @@
   }
 
   const paymentsInMonth = (month) => Store.all('payments').filter((p) => UI.monthOf(p.date) === month).sort(byDateDesc);
+  // Running totals from the very first record up to (and including) the given month
+  const collectedUpTo = (month) => Store.all('payments').filter((p) => UI.monthOf(p.date) <= month).reduce((a, p) => a + (Number(p.total) || 0), 0);
+  const expensesUpTo = (month) => Store.all('expenses').filter((e) => UI.monthOf(e.date) <= month).reduce((a, e) => a + (Number(e.amount) || 0), 0);
+  const netUpTo = (month) => collectedUpTo(month) - expensesUpTo(month);
   const collectedIn = (month) => paymentsInMonth(month).reduce((a, p) => a + (Number(p.total) || 0), 0);
   const expensesIn = (month) => Store.all('expenses').filter((e) => UI.monthOf(e.date) === month).reduce((a, e) => a + (Number(e.amount) || 0), 0);
 
@@ -155,6 +159,7 @@
   window.Logic = {
     index, courseOf, batchOf, students, activeStudents, endMonth, billableMonths, ledger, dues,
     admissionPaid, paymentsOf, totalPaidBy, monthReport, paymentsInMonth, collectedIn, expensesIn,
+    collectedUpTo, expensesUpTo, netUpTo,
     nextReceiptNo, nextStudentCode, attId, attendanceFor, attendanceStats, attendanceOnDate, studentsInBatch, byDateDesc
   };
 })();

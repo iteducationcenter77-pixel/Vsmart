@@ -93,7 +93,7 @@ window.Pages = window.Pages || {};
           </div>
           <div class="list">
             ${list.map((s) => `<div class="att-row" data-sid="${s.id}">
-              <div class="avatar" style="width:34px;height:34px;font-size:12px">${esc(UI.initials(s.name))}</div>
+              ${UI.avatar(s.name, s.photo, 'sm')}
               <div class="li-main"><div class="li-title">${esc(s.name)}</div><div class="li-sub">${esc(s.code || '')}</div></div>
               <div class="att-toggle">${['P', 'A', 'L'].map((k) => `<button class="${k} ${state.recs[s.id] === k ? 'on' : ''}" data-st="${k}" aria-label="${{ P: 'Present', A: 'Absent', L: 'Late' }[k]}">${k}</button>`).join('')}</div>
             </div>`).join('')}

@@ -37,7 +37,7 @@ window.Pages = window.Pages || {};
       .slice(0, 60);
     if (!list.length) return UI.empty('users', Logic.activeStudents().length ? 'No match' : 'No active students', Logic.activeStudents().length ? 'Try another name or ID.' : 'Add students first.');
     return list.map(({ s, due }) => `<div class="list-item clickable" data-pick="${s.id}">
-      <div class="avatar">${esc(UI.initials(s.name))}</div>
+      ${UI.avatar(s.name, s.photo)}
       <div class="li-main"><div class="li-title">${esc(s.name)}</div><div class="li-sub">${esc(s.code || '')} · ${esc((Logic.courseOf(s) || {}).name || '')}</div></div>
       <div class="li-end">${due > 0 ? `<div class="strong money" style="color:var(--danger)">${money(due)}</div><div class="small muted">due</div>` : '<span class="badge badge-success">Paid up</span>'}</div>
     </div>`).join('');
@@ -88,7 +88,7 @@ window.Pages = window.Pages || {};
         <div class="two-col">
           <div class="stack">
             <div class="card card-body row" style="flex-wrap:wrap">
-              <div class="avatar">${esc(UI.initials(s.name))}</div>
+              ${UI.avatar(s.name, s.photo)}
               <div class="li-main" style="min-width:170px"><div class="li-title">${esc(s.name)}</div><div class="li-sub">${esc(s.code || '')} · ${esc(c ? c.name : '')} · Fee ${money(s.monthlyFee)}/month</div></div>
               ${due > 0 ? `<span class="badge badge-danger">${money(due)} due</span>` : '<span class="badge badge-success">Paid up</span>'}
               <button class="btn btn-sm" data-change>Change</button>
@@ -320,6 +320,10 @@ window.Pages = window.Pages || {};
       const exp = Logic.expensesIn(rs.month);
       const byMode = MODES.map((m) => [m, pays.filter((p) => p.mode === m).reduce((a, p) => a + (Number(p.total) || 0), 0)]);
       const admissions = Store.all('students').filter((s) => UI.monthOf(s.admissionDate) === rs.month).length;
+      const opening = Logic.netUpTo(UI.addMonths(rs.month, -1));   // net carried in from earlier months
+      const totalIn = Logic.collectedUpTo(rs.month);
+      const totalOut = Logic.expensesUpTo(rs.month);
+      const balance = totalIn - totalOut;
       const shown = rows.filter((r) => rs.filter === 'all' || r.status === rs.filter).sort((a, b) => b.due - a.due || a.s.name.localeCompare(b.s.name));
       const cnt = (k) => rows.filter((r) => r.status === k).length;
       const sb = (st) => st === 'paid' ? '<span class="badge badge-success">Paid</span>' : st === 'partial' ? '<span class="badge badge-warning">Partial</span>' : '<span class="badge badge-danger">Unpaid</span>';
@@ -350,6 +354,16 @@ window.Pages = window.Pages || {};
             <div><div class="v money" style="color:${cashIn - exp >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(cashIn - exp)}</div><div class="l">Net</div></div>
             <div><div class="small" style="display:grid;gap:2px">${byMode.map(([m, v]) => `<div class="row" style="justify-content:space-between"><span class="muted">${m}</span><span class="money">${money(v)}</span></div>`).join('')}</div></div>
           </div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><h3>Running balance · till ${UI.monthLabel(rs.month, true)}</h3><span class="muted small">Every month added together</span></div>
+          <div class="stat-strip" style="border-top:0">
+            <div><div class="v money">${money(opening)}</div><div class="l">Brought forward</div></div>
+            <div><div class="v money" style="color:var(--success)">+ ${money(cashIn)}</div><div class="l">Collected this month</div></div>
+            <div><div class="v money" style="color:var(--danger)">− ${money(exp)}</div><div class="l">Expenses this month</div></div>
+            <div><div class="v money" style="color:${balance >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(balance)}</div><div class="l">Net balance till date</div></div>
+          </div>
+          <div class="card-foot small muted">Total collected ${money(totalIn)} − total expenses ${money(totalOut)} = <b style="color:var(--text)">${money(balance)}</b> in hand up to ${UI.monthLabel(rs.month, true)}.</div>
         </div>
         <div class="chips no-print" style="margin-bottom:16px">
           ${[['all', 'All', rows.length], ['unpaid', 'Unpaid', cnt('unpaid')], ['partial', 'Partial', cnt('partial')], ['paid', 'Paid', cnt('paid')]].map(([k, t, n]) => `<button class="chip ${rs.filter === k ? 'on' : ''}" data-f="${k}">${t} <span class="count">${n}</span></button>`).join('')}

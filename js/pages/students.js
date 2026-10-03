@@ -36,7 +36,7 @@ window.Pages = window.Pages || {};
       const c = Logic.courseOf(s), b = Logic.batchOf(s);
       const due = Logic.dues(s).total;
       return `<div class="list-item clickable" data-id="${s.id}">
-        <div class="avatar">${esc(UI.initials(s.name))}</div>
+        ${UI.avatar(s.name, s.photo)}
         <div class="li-main">
           <div class="li-title">${esc(s.name)} <span class="faint small" style="font-weight:400">· ${esc(s.code || '')}</span></div>
           <div class="li-sub">${esc(c ? c.name : 'No course')}${b ? ' · ' + esc(b.name) : ''}${s.phone ? ' · ' + esc(s.phone) : ''}</div>
@@ -109,6 +109,19 @@ window.Pages = window.Pages || {};
         title: isNew ? 'Add student' : 'Edit student',
         body: `<form id="stuForm" class="form-grid" autocomplete="off">
           <div class="form-section">Personal details</div>
+          <div class="field full">
+            <div class="photo-row">
+              <div class="avatar lg ${s.photo ? 'has-photo' : ''}" id="stuPhoto">${s.photo ? `<img src="${esc(s.photo)}" alt="">` : esc(UI.initials(s.name || '?'))}</div>
+              <div class="stack" style="gap:8px">
+                <div class="row-wrap">
+                  <label class="btn btn-sm" style="cursor:pointer">${icon('upload')} <span id="stuPhotoLabel">${s.photo ? 'Change photo' : 'Add photo'}</span>
+                    <input type="file" id="stuPhotoIn" accept="image/*" hidden></label>
+                  <button type="button" class="btn btn-sm btn-ghost" id="stuPhotoRm" ${s.photo ? '' : 'hidden'}>Remove</button>
+                </div>
+                <span class="hint">Optional. Shown in the student list, profile and attendance.</span>
+              </div>
+            </div>
+          </div>
           <div class="field full"><label class="req">Full name</label><input class="input" name="name" value="${v('name')}" required></div>
           <div class="field"><label class="req">Mobile number</label><input class="input" name="phone" type="tel" inputmode="tel" value="${v('phone')}" required></div>
           <div class="field"><label>Email</label><input class="input" name="email" type="email" value="${v('email')}"></div>
@@ -141,6 +154,28 @@ window.Pages = window.Pages || {};
           <button class="btn btn-primary" data-save>${isNew ? 'Add student' : 'Save changes'}</button>`,
         onMount(root, close) {
           const f = $('#stuForm', root);
+          let photo = s.photo || '';
+          const photoBox = $('#stuPhoto', root);
+          const photoRm = $('#stuPhotoRm', root);
+          $('#stuPhotoIn', root).addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            try {
+              photo = await UI.readImage(file, { max: 256, square: true });
+              photoBox.classList.add('has-photo');
+              photoBox.innerHTML = `<img src="${photo}" alt="">`;
+              photoRm.hidden = false;
+              $('#stuPhotoLabel', root).textContent = 'Change photo';
+            } catch (ex) { UI.toast(ex.message, 'error'); }
+          });
+          photoRm.addEventListener('click', () => {
+            photo = '';
+            photoBox.classList.remove('has-photo');
+            photoBox.textContent = UI.initials(f.name.value || '?');
+            photoRm.hidden = true;
+            $('#stuPhotoLabel', root).textContent = 'Add photo';
+          });
           f.courseId.addEventListener('change', () => {
             const c = Store.get('courses', f.courseId.value);
             f.batchId.innerHTML = batchOpts(f.courseId.value, '');
@@ -152,7 +187,7 @@ window.Pages = window.Pages || {};
             const err = $('#stuErr', root);
             if (!d.name || !d.phone || !d.courseId || !d.admissionDate) { err.textContent = 'Please fill the required fields (marked *).'; return; }
             if (d.status === 'active') d.leftDate = '';
-            const saved = await Store.save('students', { ...s, ...d, code: s.code || Logic.nextStudentCode() });
+            const saved = await Store.save('students', { ...s, ...d, photo, code: s.code || Logic.nextStudentCode() });
             close();
             UI.toast(isNew ? `${saved.name} added (${saved.code})` : 'Student updated');
             if (isNew) App.go('student/' + saved.id); else App.rerender();
@@ -200,7 +235,7 @@ window.Pages = window.Pages || {};
         <div class="card" style="margin-bottom:20px">
           <div class="card-body">
             <div class="profile-head">
-              <div class="avatar lg">${esc(UI.initials(s.name))}</div>
+              ${UI.avatar(s.name, s.photo, 'lg')}
               <div class="li-main" style="min-width:200px">
                 <div class="row-wrap"><h2>${esc(s.name)}</h2>${statusBadge(s)}</div>
                 <div class="muted" style="margin-top:4px">${esc(s.code || '')} · ${esc(c ? c.name : 'No course')}${b ? ' · ' + esc(b.name) : ''}</div>

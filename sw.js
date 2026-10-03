@@ -1,7 +1,7 @@
 /* Service worker: makes the app installable and usable offline.
  * App files: network-first (so updates show immediately), cache fallback when offline.
  * Firebase SDK & fonts: cache-first. Firestore/Auth API traffic is never cached. */
-const CACHE = 'ims-v5';
+const CACHE = 'ims-v6';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/config.js', './js/ui.js', './js/store.js', './js/logic.js', './js/app.js',

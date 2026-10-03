@@ -61,7 +61,7 @@
           <form id="authForm" class="stack" novalidate>
             ${input('institute', 'Institute name', 'text', 'autocomplete="organization" placeholder="e.g. Bright Future Computer Centre" required')}
             ${input('email', 'Email', 'email', `autocomplete="email" placeholder="you@example.com" value="${esc(email)}" required`)}
-            ${password('password', 'Password', 'new-password', '', 'At least 6 characters')}
+            ${password('password', 'Password', 'new-password', '', 'At least 8 characters')}
             ${submit('Create account')}
           </form>
           ${google('Sign up with Google')}
@@ -88,10 +88,27 @@
       case 'reset':
         return `<div class="auth-head"><h1>Set a new password</h1><p>Choose a new password for your account.</p></div>
           <form id="authForm" class="stack" novalidate>
-            ${password('password', 'New password', 'new-password', '', 'At least 6 characters')}
+            ${password('password', 'New password', 'new-password', '', 'At least 8 characters')}
             ${password('confirm', 'Confirm new password', 'new-password')}
             ${submit('Update password')}
           </form>`;
+      case 'blocked': {
+        const st = Store.accountStatus();
+        const note = Store.accountNote();
+        const info = {
+          pending: ['clock', 'Waiting for approval', "Your institute account has been created and verified. An administrator will review it shortly — you'll get access as soon as it is approved."],
+          paused: ['alert', 'Account paused', 'This institute account has been paused by the administrator. Please get in touch to have it switched back on.'],
+          rejected: ['alert', 'Account not approved', 'This institute account was not approved for use.']
+        }[st] || ['alert', 'Account unavailable', 'This account cannot be used right now.'];
+        return `<div class="auth-icon">${icon(info[0])}</div>
+          <div class="auth-head center"><h1>${info[1]}</h1><p>${esc(info[2])}</p></div>
+          ${note ? `<div class="notice">${icon('message')}<span>${esc(note)}</span></div>` : ''}
+          <div class="stack">
+            <button class="btn btn-primary btn-lg btn-block" data-recheck>${icon('check')} Check again</button>
+            <button class="btn btn-block" data-signout>${icon('logout')} Sign out</button>
+          </div>
+          <p class="auth-note">${icon('mail')} Signed in as ${esc(Store.userEmail())}</p>`;
+      }
       case 'local': {
         const setup = Store.auth.needsSetup();
         return `<div class="auth-head"><h1>${setup ? 'Set up this device' : 'Welcome back'}</h1>
@@ -131,6 +148,7 @@
       </main></div>`;
     el.hidden = false;
     bind(el);
+    if (view === 'blocked') startPoll(); else stopPoll();
     const first = el.querySelector('#authForm input:not([value]), #authForm input[value=""]');
     if (first && window.innerWidth > 860) first.focus();
   }
@@ -147,6 +165,17 @@
   function busy(btn, on, text) {
     if (on) { btn.dataset.label = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>${esc(text)}`; }
     else { btn.disabled = false; if (btn.dataset.label) btn.innerHTML = btn.dataset.label; }
+  }
+
+  // While an institute waits for approval, look again every 20 seconds
+  let pollTimer = null;
+  function stopPoll() { clearInterval(pollTimer); pollTimer = null; }
+  function startPoll() {
+    stopPoll();
+    pollTimer = setInterval(async () => {
+      if (view !== 'blocked') { stopPoll(); return; }
+      if (await Store.auth.recheck().catch(() => false)) { stopPoll(); done(); }
+    }, 20000);
   }
 
   function done() {
@@ -166,6 +195,19 @@
       b.innerHTML = icon(show ? 'eyeOff' : 'eye');
       b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
     }));
+    const recheck = $('[data-recheck]', el);
+    if (recheck) recheck.addEventListener('click', async () => {
+      busy(recheck, true, 'Checking…');
+      if (await Store.auth.recheck().catch(() => false)) { done(); return; }
+      busy(recheck, false);
+      banner = { type: 'error', text: 'Not approved yet. Please check again in a little while.' };
+      render();
+    });
+    const out = $('[data-signout]', el);
+    if (out) out.addEventListener('click', async () => {
+      await Store.auth.logout().catch(() => {});
+      location.replace(location.pathname);
+    });
     const g = $('[data-google]', el);
     if (g) g.addEventListener('click', async () => {
       busy(g, true, 'Redirecting to Google…');
@@ -205,7 +247,7 @@
         } else if (view === 'signup') {
           if (!d.institute) return fail('Enter your institute name.');
           if (!validEmail(d.email)) return fail('Enter a valid email address.');
-          if (d.password.length < 6) return fail('Password must be at least 6 characters.');
+          if (d.password.length < 8) return fail('Password must be at least 8 characters.');
           busy(btn, true, 'Creating account…');
           const res = await Store.auth.signUp(d.email, d.password, d.institute);
           if (res && res.needsConfirm) { resendAt = Date.now() + 60000; go('sent'); }
@@ -216,7 +258,7 @@
           await Store.auth.resetPassword(d.email);
           go('forgot-sent');
         } else if (view === 'reset') {
-          if (d.password.length < 6) return fail('Password must be at least 6 characters.');
+          if (d.password.length < 8) return fail('Password must be at least 8 characters.');
           if (d.password !== d.confirm) return fail('Passwords do not match.');
           busy(btn, true, 'Updating…');
           await Store.auth.updatePassword(d.password);
@@ -235,6 +277,7 @@
         }
       } catch (e) {
         busy(btn, false);
+        if (e.code === 'status') { go('blocked'); return; } // signed in, but not approved yet
         if (e.code === 'unconfirmed') {
           banner = { type: 'error', text: 'Please verify your email before signing in. Check your inbox, or resend the link below.' };
           go('sent', true);
@@ -251,6 +294,7 @@
       email = email || Store.lastEmail();
       banner = null;
       if (Store.mode === 'local') view = 'local';
+      else if (Store.accountStatus() && Store.accountStatus() !== 'approved') view = 'blocked';
       else if (u.recovery) view = 'reset';
       else if (u.error) { view = 'signin'; banner = { type: 'error', text: 'That link is invalid or has expired. Please sign in or request a new link.' }; }
       else if (!['signin', 'signup'].includes(view)) view = 'signin';

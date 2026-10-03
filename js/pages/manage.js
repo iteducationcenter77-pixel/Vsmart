@@ -10,35 +10,6 @@ window.Pages = window.Pages || {};
   const anyCount = (field, id) => Store.all('students').filter((s) => s[field] === id).length;
   const cur = () => esc(Store.settings().currency);
 
-  // Shrink an uploaded logo (max 320px) into a small data URL so it syncs quickly.
-  function readLogo(file) {
-    return new Promise((resolve, reject) => {
-      if (!/^image\//.test(file.type)) { reject(new Error('Please choose an image file (PNG or JPG).')); return; }
-      if (file.size > 8 * 1024 * 1024) { reject(new Error('That image is too large. Use one under 8 MB.')); return; }
-      const src = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        URL.revokeObjectURL(src);
-        const iw = img.naturalWidth || 320, ih = img.naturalHeight || 320;
-        const scale = Math.min(1, 320 / Math.max(iw, ih));
-        const w = Math.max(1, Math.round(iw * scale)), h = Math.max(1, Math.round(ih * scale));
-        const encode = (type, q, whiteBg) => {
-          const c = document.createElement('canvas');
-          c.width = w; c.height = h;
-          const g = c.getContext('2d');
-          if (whiteBg) { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); }
-          g.drawImage(img, 0, 0, w, h);
-          return c.toDataURL(type, q);
-        };
-        let data = encode('image/png');
-        if (data.length > 180000) data = encode('image/webp', 0.9);
-        if (data.length > 180000) data = encode('image/jpeg', 0.85, true); // e.g. Safari can't encode WebP
-        resolve(data);
-      };
-      img.onerror = () => { URL.revokeObjectURL(src); reject(new Error('Could not read that image.')); };
-      img.src = src;
-    });
-  }
 
   // ───────────── Courses & batches ─────────────
   function courseForm(c) {
@@ -316,7 +287,7 @@ window.Pages = window.Pages || {};
         e.target.value = '';
         if (!file) return;
         try {
-          const data = await readLogo(file);
+          const data = await UI.readImage(file, { max: 320 });
           await Store.saveSettings({ logo: data });
           const box = $('#logoPreview', el);
           box.classList.add('has-logo');

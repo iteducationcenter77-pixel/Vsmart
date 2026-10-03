@@ -117,6 +117,50 @@
   }
 
   const initials = (name) => (name || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+  const avatar = (name, photo, cls = '') => photo
+    ? `<div class="avatar has-photo ${cls}"><img src="${esc(photo)}" alt=""></div>`
+    : `<div class="avatar ${cls}">${esc(initials(name))}</div>`;
+
+  // Shrink an uploaded image into a small data URL so it syncs quickly.
+  // square: true centre-crops to a square (student photos); false keeps the shape (logos).
+  function readImage(file, { max = 320, square = false } = {}) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\//.test(file.type)) { reject(new Error('Please choose an image file (PNG or JPG).')); return; }
+      if (file.size > 10 * 1024 * 1024) { reject(new Error('That image is too large. Use one under 10 MB.')); return; }
+      const src = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(src);
+        const iw = img.naturalWidth || max, ih = img.naturalHeight || max;
+        let w, h, sx = 0, sy = 0, sw = iw, sh = ih;
+        if (square) {
+          const side = Math.min(iw, ih);
+          sx = (iw - side) / 2; sy = (ih - side) / 2; sw = sh = side;
+          w = h = Math.min(max, side);
+        } else {
+          const scale = Math.min(1, max / Math.max(iw, ih));
+          w = Math.max(1, Math.round(iw * scale));
+          h = Math.max(1, Math.round(ih * scale));
+        }
+        const encode = (type, q, whiteBg) => {
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const g = c.getContext('2d');
+          if (whiteBg) { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); }
+          g.drawImage(img, sx, sy, sw, sh, 0, 0, w, h);
+          return c.toDataURL(type, q);
+        };
+        const limit = square ? 90000 : 180000;
+        let data = square ? encode('image/jpeg', 0.82, true) : encode('image/png');
+        if (data.length > limit) data = encode('image/webp', 0.85);
+        if (data.length > limit) data = encode('image/jpeg', 0.75, true);
+        resolve(data);
+      };
+      img.onerror = () => { URL.revokeObjectURL(src); reject(new Error('Could not read that image.')); };
+      img.src = src;
+    });
+  }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
   // ── Toasts ─────────────────────────────────────
@@ -210,7 +254,7 @@
 
   window.UI = {
     icon, esc, $, $$, num, money, today, toISO, monthOf, thisMonth, monthLabel, addMonths, monthRange,
-    daysInMonth, fmtDate, weekday, amountInWords, initials, uid, toast, modal, confirmBox, formData,
+    daysInMonth, fmtDate, weekday, amountInWords, initials, avatar, readImage, uid, toast, modal, confirmBox, formData,
     download, csv, empty, waPhone, MONTHS
   };
 })();

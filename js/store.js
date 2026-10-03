@@ -139,9 +139,13 @@
     return m || 'Something went wrong. Please try again.';
   }
 
+  const PROFILE_KEY = 'ims.cloud.profile';
+
   const Cloud = {
     sb: null,
     user: null,
+    profile: null,    // { institute_name, status, status_note } — the institute's account record
+    status: null,     // 'approved' | 'pending' | 'paused' | 'rejected'
     url: {},          // what Supabase put in the URL: { type: 'signup' | 'recovery' | …, error }
     queue: [],        // pending writes: { op: 'upsert' | 'delete', col, id, data }
     channel: null,
@@ -175,6 +179,27 @@
       setInterval(() => { if (this.queue.length) this.flush(); }, 20000);
     },
 
+    // Is this institute approved to use the app? (set by the administrator)
+    async loadProfile() {
+      if (navigator.onLine) {
+        const { data, error } = await this.sb.from('profiles')
+          .select('institute_name,status,status_note').eq('id', this.user.id).maybeSingle();
+        if (!error) {
+          this.profile = data || { status: 'pending' };
+          try { localStorage.setItem(PROFILE_KEY, JSON.stringify({ id: this.user.id, ...this.profile })); } catch (e) {}
+        } else if (!isNetErr(error)) throw new Error(error.message);
+      }
+      if (!this.profile) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+          if (saved && saved.id === this.user.id) this.profile = saved;
+        } catch (e) {}
+      }
+      // Offline with no record of this account: trust the device, the server decides once back online
+      this.status = (this.profile && this.profile.status) || (navigator.onLine ? 'pending' : 'approved');
+      return this.status;
+    },
+
     // Load this account's offline cache, then sync with the server.
     async start() {
       let saved = null;
@@ -184,6 +209,8 @@
         settings = saved.settings || {};
         this.queue = saved.queue || [];
       }
+      await this.loadProfile();
+      if (this.status !== 'approved') { emit(); return; } // blocked: no data, no sync
       localStorage.setItem(LAST_USER, JSON.stringify({ id: this.user.id, email: this.user.email }));
       emit();
       this.subscribe();
@@ -198,6 +225,8 @@
       settings = {};
       this.queue = [];
       this.user = null;
+      this.profile = null;
+      this.status = null;
       emit();
     },
 
@@ -248,6 +277,10 @@
       if (this.channel || !navigator.onLine) return;
       const ch = this.sb.channel('ims-db-' + this.user.id);
       TABLES.forEach((t) => ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, (p) => this.onRemote(t, p)));
+      // If the administrator pauses or re-approves this institute, start again with the new status
+      ch.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + this.user.id }, (p) => {
+        if (p.new && p.new.status && p.new.status !== this.status) location.reload();
+      });
       ch.subscribe((status) => {
         if (status === 'SUBSCRIBED') this.fetchAll().catch(() => {}); // catch anything missed while disconnected
       });
@@ -345,7 +378,26 @@
       if (!data.session) return { needsConfirm: true };
       this.user = data.session.user;
       await this.start();
+      this.throwIfBlocked();
       return {};
+    },
+
+    // A new or paused institute stays signed in, but sees the account screen instead of the app
+    throwIfBlocked() {
+      if (this.status === 'approved') return;
+      const e = new Error({
+        pending: 'Your institute is waiting for approval.',
+        paused: 'This institute account is paused.',
+        rejected: 'This institute account was not approved.'
+      }[this.status] || 'This account cannot be used yet.');
+      e.code = 'status';
+      throw e;
+    },
+
+    async recheck() {
+      if (!this.user) return false;
+      await this.start();
+      return this.status === 'approved';
     },
 
     async login(email, pw) {
@@ -358,6 +410,7 @@
       localStorage.setItem('ims.lastEmail', email);
       this.user = data.user;
       await this.start();
+      this.throwIfBlocked();
     },
 
     async resend(email) {
@@ -387,7 +440,7 @@
       if (error) throw new Error(authMessage(error));
     },
 
-    isLoggedIn() { return !!this.user; },
+    isLoggedIn() { return !!this.user && this.status === 'approved'; },
 
     async logout() {
       const key = this.user ? this.key() : null;
@@ -397,6 +450,7 @@
       // network), which silently logs the old account back in on refresh — remove it ourselves.
       try { Object.keys(localStorage).filter((k) => /^sb-.+-auth-token/.test(k)).forEach((k) => localStorage.removeItem(k)); } catch (e) {}
       localStorage.removeItem(LAST_USER);
+      localStorage.removeItem(PROFILE_KEY);
       if (key) await idb.del(key).catch(() => {});
       this.stop();
     },
@@ -447,6 +501,8 @@
       return B.pendingCount() ? 'pending' : 'synced';
     },
     userEmail() { return B.userEmail(); },
+    accountStatus() { return CLOUD ? Cloud.status : 'approved'; },
+    accountNote() { return (CLOUD && Cloud.profile && Cloud.profile.status_note) || ''; },
     pendingCount() { return B.pendingCount(); },
     async syncNow() { if (CLOUD) await Cloud.flush(); },
     lastEmail() { try { return localStorage.getItem('ims.lastEmail') || ''; } catch (e) { return ''; } },
@@ -466,7 +522,8 @@
       resend: cloudOnly((e) => Cloud.resend(e)),
       resetPassword: cloudOnly((e) => Cloud.resetPassword(e)),
       updatePassword: cloudOnly((p) => Cloud.updatePassword(p)),
-      google: cloudOnly(() => Cloud.google())
+      google: cloudOnly(() => Cloud.google()),
+      recheck: cloudOnly(() => Cloud.recheck())
     },
     exportData() {
       const d = { app: 'institute-manager', format: 1, exportedAt: new Date().toISOString(), settings };
