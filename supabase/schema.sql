@@ -32,6 +32,9 @@ drop policy if exists "Update own profile" on public.profiles;
 create policy "Update own profile" on public.profiles for update to authenticated
   using (id = (select auth.uid())) with check (id = (select auth.uid()));
 revoke all on public.profiles from anon;
+-- An institute may rename itself, but never change its own status: only admin_set_status() can.
+revoke insert, update, delete on public.profiles from authenticated;
+grant update (institute_name, full_name) on public.profiles to authenticated;
 
 -- Administrators who can open /admin. Add one by email:
 --   insert into public.app_superadmins (user_id, email)
@@ -157,11 +160,28 @@ begin
 end;
 $$;
 
+-- Read-only view of one institute's records, for the institute dashboard in /admin
+create or replace function public.admin_institute_data(target uuid)
+returns jsonb language sql stable security definer set search_path = ''
+as $$
+  select case when (select public.is_superadmin()) then jsonb_build_object(
+    'settings',   coalesce((select data from public.settings  where owner = target and id = 'settings'), '{}'::jsonb),
+    'students',   coalesce((select jsonb_agg(data) from public.students   where owner = target), '[]'::jsonb),
+    'courses',    coalesce((select jsonb_agg(data) from public.courses    where owner = target), '[]'::jsonb),
+    'batches',    coalesce((select jsonb_agg(data) from public.batches    where owner = target), '[]'::jsonb),
+    'payments',   coalesce((select jsonb_agg(data) from public.payments   where owner = target), '[]'::jsonb),
+    'expenses',   coalesce((select jsonb_agg(data) from public.expenses   where owner = target), '[]'::jsonb),
+    'attendance', coalesce((select jsonb_agg(data) from public.attendance where owner = target), '[]'::jsonb)
+  ) else null end;
+$$;
+
 revoke all on function public.is_superadmin()                       from public, anon;
 revoke all on function public.account_active()                      from public, anon;
 revoke all on function public.admin_institutes()                    from public, anon;
 revoke all on function public.admin_set_status(uuid, text, text)    from public, anon;
+revoke all on function public.admin_institute_data(uuid)            from public, anon;
 grant execute on function public.is_superadmin()                    to authenticated;
+grant execute on function public.admin_institute_data(uuid)         to authenticated;
 grant execute on function public.account_active()                   to authenticated;
 grant execute on function public.admin_institutes()                 to authenticated;
 grant execute on function public.admin_set_status(uuid, text, text) to authenticated;
