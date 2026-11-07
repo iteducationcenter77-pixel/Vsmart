@@ -185,3 +185,40 @@ grant execute on function public.admin_institute_data(uuid)         to authentic
 grant execute on function public.account_active()                   to authenticated;
 grant execute on function public.admin_institutes()                 to authenticated;
 grant execute on function public.admin_set_status(uuid, text, text) to authenticated;
+
+-- ─── Student ID card QR code (/verify) ────────────────────────────────────────
+-- Public student profile for the QR code on ID cards (read-only, limited fields).
+-- Returns null unless the institute is approved and the student exists.
+create or replace function public.card_profile(p_owner uuid, p_student text)
+returns jsonb language sql stable security definer set search_path = ''
+as $$
+  select jsonb_build_object(
+    'student', jsonb_build_object(
+      'name',           s.data ->> 'name',
+      'code',           s.data ->> 'code',
+      'photo',          s.data ->> 'photo',
+      'status',         coalesce(s.data ->> 'status', 'active'),
+      'admissionDate',  s.data ->> 'admissionDate',
+      'durationMonths', s.data ->> 'durationMonths',
+      'leftDate',       s.data ->> 'leftDate',
+      'course', (select c.data ->> 'name' from public.courses c where c.owner = p_owner and c.id = s.data ->> 'courseId'),
+      'batch',  (select concat_ws(' · ', b.data ->> 'name', nullif(b.data ->> 'time', ''))
+                   from public.batches b where b.owner = p_owner and b.id = s.data ->> 'batchId')
+    ),
+    'institute', jsonb_build_object(
+      'name',    coalesce(nullif(st.data ->> 'name', ''), p.institute_name),
+      'tagline', st.data ->> 'tagline',
+      'logo',    st.data ->> 'logo',
+      'address', st.data ->> 'address',
+      'phone',   st.data ->> 'phone',
+      'email',   st.data ->> 'email',
+      'color',   st.data ->> 'idColor'
+    )
+  )
+  from public.profiles p
+  join public.students s on s.owner = p.id and s.id = p_student
+  left join public.settings st on st.owner = p.id and st.id = 'settings'
+  where p.id = p_owner and p.status = 'approved';
+$$;
+revoke all on function public.card_profile(uuid, text) from public;
+grant execute on function public.card_profile(uuid, text) to anon, authenticated;

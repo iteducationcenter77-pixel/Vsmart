@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Student profile</title>
+  <meta name="theme-color" content="#1e3a8a">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand: #1e3a8a; --brand-deep: #14275e;
+      --bg: #eef1f6; --surface: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0;
+      --ok: #067647; --ok-bg: #ecfdf3; --ok-bd: #abefc6;
+      --warn: #b54708; --warn-bg: #fffaeb; --warn-bd: #fedf89;
+      --bad: #b42318; --bad-bg: #fef3f2; --bad-bd: #fecdca;
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b0f17; --surface: #121826; --text: #f2f4f7; --muted: #98a2b3; --line: #243049;
+        --ok: #47cd89; --ok-bg: #0e2a1d; --ok-bd: #175c3a; --warn: #fdb022; --warn-bg: #2e2110; --warn-bd: #6a4a12;
+        --bad: #f97066; --bad-bg: #2f1512; --bad-bd: #6e2a22; color-scheme: dark; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 15px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 460px; margin: 0 auto; padding: 20px 16px calc(28px + env(safe-area-inset-bottom)); }
+    .card { background: var(--surface); border-radius: 22px; overflow: hidden; box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 24px 48px -20px rgba(16,24,40,.28); }
+    .head { position: relative; padding: 22px 20px 64px; color: #fff; background: linear-gradient(135deg, var(--brand), var(--brand-deep)); overflow: hidden; }
+    .head::after { content: ""; position: absolute; right: -50px; top: -60px; width: 190px; height: 190px; border-radius: 50%; background: rgba(255,255,255,.08); }
+    .inst { position: relative; display: flex; align-items: center; gap: 14px; z-index: 1; }
+    .logo { width: 54px; height: 54px; flex: none; border-radius: 50%; background: #fff; display: grid; place-items: center; overflow: hidden; color: var(--brand); font-weight: 700; font-size: 19px; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+    .logo img { width: 90%; height: 90%; object-fit: contain; }
+    .inst h1 { margin: 0; font-size: 18px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; }
+    .inst p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+    .photo { position: relative; z-index: 2; width: 128px; height: 128px; margin: -56px auto 0; border-radius: 24px; border: 4px solid var(--surface); background: #dbe3f0; box-shadow: 0 10px 24px -8px rgba(16,24,40,.35); overflow: hidden; display: grid; place-items: center; font-size: 42px; font-weight: 600; color: var(--brand); }
+    .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .who { text-align: center; padding: 14px 20px 4px; }
+    .who h2 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -.02em; }
+    .who .course { margin-top: 4px; color: var(--brand); font-weight: 600; }
+    @media (prefers-color-scheme: dark) { .who .course { color: #a5b4fc; } }
+    .badges { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 99px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); }
+    .badge svg { width: 15px; height: 15px; }
+    .b-ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok-bd); }
+    .b-warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-bd); }
+    .b-bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad-bd); }
+    .b-id { color: var(--muted); letter-spacing: .03em; }
+    dl { margin: 18px 20px 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+    dl div { padding: 12px 14px; border-top: 1px solid var(--line); }
+    dl div.top { border-top: 0; }
+    dl div.left { border-right: 1px solid var(--line); }
+    dl div.full { grid-column: 1 / -1; }
+    dt { font-size: 12px; color: var(--muted); }
+    dd { margin: 2px 0 0; font-weight: 600; word-break: break-word; }
+    .foot { padding: 16px 20px 20px; font-size: 13px; color: var(--muted); text-align: center; }
+    .foot a { color: inherit; font-weight: 600; text-decoration: none; }
+    .foot .contact { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; }
+    .checked { margin-top: 14px; text-align: center; font-size: 12px; color: var(--muted); }
+    .state { padding: 54px 24px; text-align: center; }
+    .state .ic { width: 60px; height: 60px; margin: 0 auto 14px; border-radius: 18px; display: grid; place-items: center; }
+    .state h2 { margin: 0 0 6px; font-size: 19px; }
+    .state p { margin: 0; color: var(--muted); }
+    .spin { width: 28px; height: 28px; margin: 0 auto 14px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn { display: inline-flex; margin-top: 18px; height: 40px; align-items: center; padding: 0 18px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main class="wrap"><div class="card" id="card"><div class="state"><div class="spin"></div><p>Checking student record…</p></div></div>
+    <p class="checked" id="checked"></p></main>
+
+  <script src="js/config.js"></script>
+  <script>
+  (function () {
+    const ICON = {
+      check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8.5 12 2.5 2.5 5-5"/></svg>',
+      alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>'
+    };
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const esc = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const img = (v) => /^data:image\/(png|jpe?g|webp|gif|svg\+xml);base64,[a-z0-9+/=\s]+$/i.test(v || '') ? v : '';
+    const date = (iso) => { if (!iso) return ''; const [y, m, d] = String(iso).split('-').map(Number); return d && m ? `${d} ${MONTHS[m - 1]} ${y}` : ''; };
+    const validTill = (adm, months) => {
+      const n = Number(months) || 0;
+      if (!adm || n <= 0) return '';
+      const [y, m] = adm.split('-').map(Number);
+      const e = new Date(y, m - 1 + n - 1, 1);
+      return `${MONTHS[e.getMonth()]} ${e.getFullYear()}`;
+    };
+    const initials = (n) => String(n || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+    const card = document.getElementById('card');
+
+    function fail(title, text, retry) {
+      card.innerHTML = `<div class="state"><div class="ic b-bad">${ICON.alert}</div><h2>${esc(title)}</h2><p>${esc(text)}</p>
+        ${retry ? '<button class="btn" onclick="location.reload()">Try again</button>' : ''}</div>`;
+    }
+
+    function shade(hex, t) {
+      const p = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      return '#' + p.map((v) => Math.round(v * (1 - t)).toString(16).padStart(2, '0')).join('');
+    }
+
+    // Two-column details grid: full-width rows where asked, or when a cell would sit alone
+    function cells(rows) {
+      let col = 0, row = 0, out = '';
+      rows.forEach(([k, v, full], i) => {
+        const alone = !full && col === 0 && rows.slice(i + 1).filter((r) => !r[2]).length === 0;
+        const cls = [];
+        if (row === 0) cls.push('top');
+        if (full || alone) { cls.push('full'); col = 0; row++; }
+        else if (col === 0) { cls.push('left'); col = 1; }
+        else { col = 0; row++; }
+        if (row === 0 && col === 0 && cls.indexOf('top') < 0) cls.push('top');
+        out += `<div class="${cls.join(' ')}"><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`;
+      });
+      return out;
+    }
+
+    function show(data) {
+      const st = data.student || {}, inst = data.institute || {};
+      const color = /^#[0-9a-f]{6}$/i.test(inst.color || '') ? inst.color : '#1e3a8a';
+      document.documentElement.style.setProperty('--brand', color);
+      document.documentElement.style.setProperty('--brand-deep', shade(color, 0.35));
+      document.querySelector('meta[name=theme-color]').content = color;
+      document.title = `${st.name || 'Student'} · ${inst.name || 'Student profile'}`;
+      const status = { active: ['Active student', 'b-ok'], completed: ['Course completed', 'b-warn'], dropped: ['No longer enrolled', 'b-bad'] }[st.status || 'active'] || ['Student', 'b-warn'];
+      const valid = validTill(st.admissionDate, st.durationMonths);
+      const rows = [
+        ['Student ID', st.code],
+        ['Batch', st.batch],
+        ['Admission date', date(st.admissionDate)],
+        [st.status === 'active' || !st.status ? 'Valid till' : 'Left on', st.status === 'active' || !st.status ? valid : date(st.leftDate)]
+      ].filter((r) => r[1]);
+      const logo = img(inst.logo), photo = img(st.photo);
+      card.innerHTML = `
+        <div class="head"><div class="inst">
+          <div class="logo">${logo ? `<img src="${logo}" alt="">` : esc(initials(inst.name))}</div>
+          <div><h1>${esc(inst.name || 'Institute')}</h1>${inst.tagline ? `<p>${esc(inst.tagline)}</p>` : ''}</div>
+        </div></div>
+        <div class="photo">${photo ? `<img src="${photo}" alt="">` : esc(initials(st.name))}</div>
+        <div class="who">
+          <h2>${esc(st.name)}</h2>
+          ${st.course ? `<div class="course">${esc(st.course)}</div>` : ''}
+          <div class="badges">
+            <span class="badge ${status[1]}">${ICON.check}${esc(status[0])}</span>
+            ${st.code ? `<span class="badge b-id">ID ${esc(st.code)}</span>` : ''}
+          </div>
+        </div>
+        <dl>${cells(rows)}</dl>
+        <div class="foot">
+          ${inst.address ? `<div>${esc(inst.address)}</div>` : ''}
+          <div class="contact">
+            ${inst.phone ? `<a href="tel:${esc(String(inst.phone).replace(/[^\d+]/g, ''))}">${esc(inst.phone)}</a>` : ''}
+            ${inst.email ? `<a href="mailto:${esc(inst.email)}">${esc(inst.email)}</a>` : ''}
+          </div>
+        </div>`;
+      const now = new Date();
+      document.getElementById('checked').textContent = `Verified from ${inst.name || 'the institute'}'s records · ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}, ${now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}`;
+    }
+
+    async function run() {
+      const m = (new URLSearchParams(location.search).get('c') || '').match(/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.(.+)$/i);
+      if (!m) { fail('Invalid ID card link', 'This QR code does not contain a valid student ID card link.'); return; }
+      const sb = (window.IMS_CONFIG || {}).supabase || {};
+      if (!sb.url || !sb.anonKey) { fail('Not available', 'Online verification is not set up for this site.'); return; }
+      let res;
+      try {
+        res = await fetch(`${sb.url}/rest/v1/rpc/card_profile`, {
+          method: 'POST',
+          headers: { apikey: sb.anonKey, Authorization: `Bearer ${sb.anonKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_owner: m[1].toLowerCase(), p_student: m[2] })
+        });
+      } catch (e) { fail('No internet connection', 'Connect to the internet and try again.', true); return; }
+      if (!res.ok) { fail('Could not check this card', 'Please try again in a moment.', true); return; }
+      const data = await res.json().catch(() => null);
+      if (!data || !data.student) { fail('Student not found', 'This ID card does not match any current student record. It may have been cancelled or the student removed.'); return; }
+      show(data);
+    }
+    run();
+  })();
+  </script>
+</body>
+</html>

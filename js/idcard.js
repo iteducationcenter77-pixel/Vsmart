@@ -106,16 +106,53 @@
     return { size: min, lines: wrap(g, text, maxPx, maxLines) };
   }
   function text(g, t, x, y, align = 'left') { g.textAlign = align; g.fillText(t, x, y); }
+  const dims = (img) => [img.naturalWidth || img.width, img.naturalHeight || img.height];
   function contain(g, img, x, y, w, h) {
-    const r = Math.min(w / img.naturalWidth, h / img.naturalHeight);
-    const dw = img.naturalWidth * r, dh = img.naturalHeight * r;
+    const [iw, ih] = dims(img);
+    const r = Math.min(w / iw, h / ih);
+    const dw = iw * r, dh = ih * r;
     g.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
   }
   function cover(g, img, x, y, w, h) {
-    const r = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+    const [iw, ih] = dims(img);
+    const r = Math.max(w / iw, h / ih);
     const sw = w / r, sh = h / r;
-    g.drawImage(img, (img.naturalWidth - sw) / 2, (img.naturalHeight - sh) / 2, sw, sh, x, y, w, h);
+    g.drawImage(img, (iw - sw) / 2, (ih - sh) / 2, sw, sh, x, y, w, h);
   }
+
+  // Logos often come with a white or transparent border; crop it so the emblem fills its badge.
+  const trimmed = new WeakMap();
+  function trimLogo(img) {
+    if (!img) return null;
+    if (trimmed.has(img)) return trimmed.get(img);
+    let out = img;
+    try {
+      const [iw, ih] = dims(img);
+      const c = document.createElement('canvas');
+      c.width = iw; c.height = ih;
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      const px = g.getImageData(0, 0, iw, ih).data;
+      let x0 = iw, y0 = ih, x1 = -1, y1 = -1;
+      for (let y = 0; y < ih; y++) {
+        for (let x = 0; x < iw; x++) {
+          const i = (y * iw + x) * 4;
+          const blank = px[i + 3] < 24 || (px[i] > 238 && px[i + 1] > 238 && px[i + 2] > 238);
+          if (!blank) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        }
+      }
+      if (x1 >= x0 && y1 >= y0 && (x1 - x0 + 1 < iw || y1 - y0 + 1 < ih)) {
+        const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
+        const t = document.createElement('canvas');
+        t.width = cw; t.height = ch;
+        t.getContext('2d').drawImage(c, x0, y0, cw, ch, 0, 0, cw, ch);
+        out = t;
+      }
+    } catch (e) { /* use the logo as it is */ }
+    trimmed.set(img, out);
+    return out;
+  }
+
   // Round logo badge (white disc); initials when there is no logo
   function badge(g, logo, cx, cy, r, color, name) {
     g.save();
@@ -125,10 +162,19 @@
     g.beginPath(); g.arc(m(cx), m(cy), m(r), 0, Math.PI * 2); g.fill();
     g.restore();
     if (logo) {
+      const [lw, lh] = dims(logo);
+      const ratio = lw / lh;
       g.save();
-      g.beginPath(); g.arc(m(cx), m(cy), m(r * 0.92), 0, Math.PI * 2); g.clip();
-      const s = r * 1.4;
-      contain(g, logo, m(cx - s / 2), m(cy - s / 2), m(s), m(s));
+      g.beginPath(); g.arc(m(cx), m(cy), m(r * 0.9), 0, Math.PI * 2); g.clip();
+      if (ratio > 0.8 && ratio < 1.25) {
+        // Round / square emblem: fill the badge, leaving a thin white ring
+        const s = r * 1.8;
+        contain(g, logo, m(cx - s / 2), m(cy - s / 2), m(s), m(s));
+      } else {
+        // Wide or tall logo: fit it inside the circle
+        const s = r * 1.38;
+        contain(g, logo, m(cx - s / 2), m(cy - s / 2), m(s), m(s));
+      }
       g.restore();
     } else {
       g.fillStyle = color;
@@ -160,7 +206,8 @@
     return true;
   }
   function qr(g, value, x, y, size) {
-    const q = window.qrcode(0, 'M');
+    // Links are longer: low error correction keeps the squares large enough for any phone camera
+    const q = window.qrcode(0, value.length > 40 ? 'L' : 'M');
     q.addData(value);
     q.make();
     const n = q.getModuleCount();
@@ -181,7 +228,8 @@
       course: course ? course.name : '',
       batch: batch ? batch.name + (batch.time ? ' · ' + batch.time : '') : '',
       valid: end ? UI.monthLabel(end) : '',
-      value: Logic.cardValue(s)
+      value: Logic.cardValue(s),
+      qr: Logic.profileUrl(s) || Logic.cardValue(s)
     };
   }
 
@@ -190,7 +238,8 @@
     const d = details(s, over);
     const [c, g] = sheet();
     const color = d.color, deep = mix(color, '#000000', 0.35), soft = mix(color, '#ffffff', 0.9);
-    const [logo, photo] = await Promise.all([loadImg(d.st.logo), loadImg(s.photo)]);
+    const [rawLogo, photo] = await Promise.all([loadImg(d.st.logo), loadImg(s.photo)]);
+    const logo = trimLogo(rawLogo);
 
     // Header with a curved edge
     const hb = 20.5;
@@ -268,8 +317,10 @@
       if (y > limit) return;
       g.fillStyle = GREY; font(g, 1.8, 600, 0.12);
       text(g, label.toUpperCase(), m(6.5), m(y));
-      g.fillStyle = INK; font(g, 2.3, 600);
-      text(g, ellipsis(g, value, m(W - 20.5 - 5)), m(20.5), m(y));
+      g.fillStyle = INK;
+      const v = fit(g, value, m(W - 20.5 - 4), 2.3, 1.9, 600, 1);
+      font(g, v.size, 600);
+      text(g, v.lines[0] || '', m(20.5), m(y));
       y += rowH;
     });
 
@@ -290,12 +341,64 @@
     return c;
   }
 
+  // Middle of the back. Returns the last text line's position (mm); draws only when `draw` is true.
+  function backBody(g, d, s, [k, qs, maxNote], draw) {
+    const color = d.color, soft = mix(color, '#ffffff', 0.9);
+    const put = (t, x, y, align) => { if (draw) text(g, t, x, y, align); };
+    const qx = (W - qs) / 2, qy = 16.2;
+    if (draw) {
+      g.fillStyle = soft; rr(g, m(qx - 3.3), m(qy - 3.3), m(qs + 6.6), m(qs + 6.6), m(2.6)); g.fill();
+      g.fillStyle = '#ffffff'; rr(g, m(qx - 2.4), m(qy - 2.4), m(qs + 4.8), m(qs + 4.8), m(1.8)); g.fill();
+      qr(g, d.qr, qx, qy, qs);
+    }
+    let y = qy + qs + 5.5;
+    g.fillStyle = GREY; font(g, 1.55, 700, 0.3);
+    put(d.qr === d.value ? 'SCAN FOR ATTENDANCE' : 'SCAN TO VIEW STUDENT PROFILE', m(W / 2), m(y), 'center');
+
+    // Emergency contact
+    y += 4.3 * k;
+    g.fillStyle = color; font(g, 1.7 * k, 700, 0.3);
+    put('EMERGENCY CONTACT', m(5), m(y));
+    if (draw) {
+      const lw = width(g, 'EMERGENCY CONTACT');
+      g.fillStyle = mix(color, '#ffffff', 0.75);
+      g.fillRect(m(5) + lw + m(1.5), m(y - 0.6), m(W - 5) - (m(5) + lw + m(1.5)), m(0.22));
+    }
+    const rows = [['Guardian', s.guardianName], ['Phone', s.guardianPhone || s.phone],
+      ['Born', s.dob ? UI.fmtDate(s.dob) : ''], ['Address', s.address]].filter((r) => r[1]);
+    const vx = 19.5, vmax = m(W - vx - 4.5);
+    rows.forEach(([label, value]) => {
+      y += 3.2 * k;
+      g.fillStyle = GREY; font(g, 1.65 * k, 600, 0.1);
+      put(label.toUpperCase(), m(5), m(y));
+      g.fillStyle = INK; font(g, 2.0 * k, 600);
+      const lines = label === 'Address' ? wrap(g, value, vmax, 2) : [ellipsis(g, value, vmax)];
+      lines.forEach((l, i) => { if (i) y += 2.45 * k; put(l, m(vx), m(y)); });
+    });
+
+    // Card rules, then where to return it — always in full
+    const note = d.st.idNote || `This card is the property of ${d.st.name}. Carry it at all times and show it at the entrance to mark your attendance.`;
+    const ret = [d.st.address, d.st.phone && 'Ph: ' + d.st.phone].filter(Boolean).join(' · ');
+    const lh = 2.2 * k;
+    y += 1.6 * k;
+    g.fillStyle = BODY; font(g, 1.6 * k, 400);
+    wrap(g, note, m(W - 10), maxNote).forEach((l) => { y += lh; put(l, m(5), m(y)); });
+    if (ret) {
+      y += 0.5 * k;
+      g.fillStyle = INK; font(g, 1.6 * k, 600);
+      wrap(g, 'If found, please return to: ' + ret, m(W - 10), 3).forEach((l) => { y += lh; put(l, m(5), m(y)); });
+    }
+    return y;
+  }
+
   // ── Back ──
   async function drawBack(s, over) {
     const d = details(s, over);
     const [c, g] = sheet();
     const color = d.color, deep = mix(color, '#000000', 0.35), soft = mix(color, '#ffffff', 0.9);
-    const [logo, sign] = await Promise.all([loadImg(d.st.logo), loadImg(d.st.idSignature)]);
+    const [rawLogo, rawSign] = await Promise.all([loadImg(d.st.logo), loadImg(d.st.idSignature)]);
+    const sign = trimLogo(rawSign);
+    const logo = trimLogo(rawLogo);
 
     // Header band
     const hh = 12.4;
@@ -314,45 +417,11 @@
       text(g, ellipsis(g, contact, nmax), m(nx), m(9.0));
     }
 
-    // QR code
-    const qs = 19, qx = (W - qs) / 2, qy = 16.4;
-    g.fillStyle = soft; rr(g, m(qx - 3.5), m(qy - 3.5), m(qs + 7), m(qs + 7), m(2.6)); g.fill();
-    g.fillStyle = '#ffffff'; rr(g, m(qx - 2.5), m(qy - 2.5), m(qs + 5), m(qs + 5), m(1.8)); g.fill();
-    qr(g, d.value, qx, qy, qs);
-    g.fillStyle = GREY; font(g, 1.55, 700, 0.3);
-    text(g, 'SCAN FOR ATTENDANCE', m(W / 2), m(qy + qs + 5.9), 'center');
-
-    // Emergency contact
-    let y = qy + qs + 10.2;
-    g.fillStyle = color; font(g, 1.7, 700, 0.3);
-    text(g, 'EMERGENCY CONTACT', m(5), m(y));
-    const lw = width(g, 'EMERGENCY CONTACT');
-    g.fillStyle = mix(color, '#ffffff', 0.75);
-    g.fillRect(m(5) + lw + m(1.5), m(y - 0.6), m(W - 5) - (m(5) + lw + m(1.5)), m(0.22));
-    y += 3.6;
-    const rows = [['Guardian', s.guardianName], ['Phone', s.guardianPhone || s.phone],
-      ['Born', s.dob ? UI.fmtDate(s.dob) : ''], ['Address', s.address]].filter((r) => r[1]);
-    rows.forEach(([label, value]) => {
-      g.fillStyle = GREY; font(g, 1.65, 600, 0.1);
-      text(g, label.toUpperCase(), m(5), m(y));
-      g.fillStyle = INK; font(g, 2.0, 600);
-      const lines = label === 'Address' ? wrap(g, value, m(W - 19.5 - 4.5), 2) : [ellipsis(g, value, m(W - 19.5 - 4.5))];
-      lines.forEach((l, i) => { text(g, l, m(19.5), m(y)); if (i < lines.length - 1) y += 2.5; });
-      y += 3.1;
-    });
-
-    // Notes: card rules and where to return it
-    y += 0.6;
-    const note = d.st.idNote || `This card is the property of ${d.st.name}. Carry it at all times and show it at the entrance to mark your attendance.`;
-    const ret = [d.st.address, d.st.phone && 'Ph: ' + d.st.phone].filter(Boolean).join(' · ');
-    g.fillStyle = BODY; font(g, 1.6, 400);
-    const noteLines = wrap(g, note, m(W - 10), 3);
-    noteLines.forEach((l) => { if (y < 72.6) text(g, l, m(5), m(y)); y += 2.2; });
-    if (ret && y < 72.8) {
-      y += 0.4;
-      g.fillStyle = INK; font(g, 1.6, 600);
-      wrap(g, 'If found, please return to: ' + ret, m(W - 10), 2).forEach((l) => { if (y < 73.4) text(g, l, m(5), m(y)); y += 2.2; });
-    }
+    // QR code, emergency contact and notes — sized so everything fits (smaller only when text is long)
+    const opts = [[1, 19, 3], [0.95, 18, 3], [0.9, 17, 3], [0.86, 16, 2], [0.82, 15, 2]];
+    let pick = opts[opts.length - 1];
+    for (const o of opts) { if (backBody(g, d, s, o, false) <= 73.3) { pick = o; break; } }
+    backBody(g, d, s, pick, true);
 
     // Issue date & signature
     g.fillStyle = GREY; font(g, 1.45, 600, 0.15);

@@ -167,6 +167,29 @@
     return Store.all('students').find((s) => norm(s.code) === v) || Store.all('students').find((s) => norm(s.id) === v) || null;
   }
 
+  // The QR code on the back is a link to the student's public profile page:
+  //   https://<site>/verify?c=<institute account id>.<student id>
+  function profileUrl(s) {
+    const owner = Store.userId();
+    if (!owner || !s || !s.id || s.id === 'sample') return '';
+    return `${location.origin}/verify?c=${owner}.${encodeURIComponent(s.id)}`;
+  }
+  function parseProfileUrl(raw) {
+    const m = String(raw || '').match(/[?&]c=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.([^&#\s]+)/i);
+    if (!m) return null;
+    try { return { owner: m[1].toLowerCase(), id: decodeURIComponent(m[2]) }; } catch (e) { return null; }
+  }
+
+  // Whatever a scanner read — the barcode (student ID) or the QR link — as { student, foreign }
+  function readCard(raw) {
+    const link = parseProfileUrl(raw);
+    if (link) {
+      if (link.owner !== Store.userId()) return { student: null, foreign: true };
+      return { student: Store.get('students', link.id), foreign: false };
+    }
+    return { student: studentByCode(raw), foreign: false };
+  }
+
   // This student's mark on `date`, from any batch sheet: { st, at } or null
   function markOn(sid, date) {
     let found = null;
@@ -214,6 +237,6 @@
     admissionPaid, paymentsOf, totalPaidBy, monthReport, paymentsInMonth, collectedIn, expensesIn,
     collectedUpTo, expensesUpTo, netUpTo,
     nextReceiptNo, nextStudentCode, attId, attendanceFor, attendanceStats, attendanceOnDate, studentsInBatch, byDateDesc,
-    cardValue, studentByCode, markOn, recordScan, scansOn
+    cardValue, studentByCode, profileUrl, parseProfileUrl, readCard, markOn, recordScan, scansOn
   };
 })();

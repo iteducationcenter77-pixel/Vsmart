@@ -72,7 +72,7 @@ window.Pages = window.Pages || {};
       </div>`;
     }
     if (kind === 'unknown') {
-      return `<div class="scan-banner error">${icon('alert')}<div><b>Card not recognised</b><span>No student has the ID “${esc(info.code)}”.</span></div></div>
+      return `<div class="scan-banner error">${icon('alert')}<div><b>Card not recognised</b><span>${info.foreign ? 'This ID card belongs to another institute.' : `No student has the ID “${esc(info.code)}”.`}</span></div></div>
         <div class="scan-idle compact"><p class="muted">Check the card belongs to this institute, or add the student first.</p></div>`;
     }
     const c = Logic.courseOf(s), b = Logic.batchOf(s);
@@ -103,7 +103,7 @@ window.Pages = window.Pages || {};
     }[kind];
     const ic = { ok: 'checkCircle', already: 'clock', inactive: 'alert', unknown: 'alert' }[kind];
     return `${s ? UI.avatar(s.name, s.photo, 'lg') : `<div class="avatar lg">${icon('alert')}</div>`}
-      <div class="li-main"><div class="scan-pop-name">${esc(s ? s.name : info.code)}</div>
+      <div class="li-main"><div class="scan-pop-name">${esc(s ? s.name : info.foreign ? 'Another institute' : info.code)}</div>
         <div class="scan-pop-line">${icon(ic)} ${esc(line)}</div></div>`;
   }
 
@@ -134,8 +134,9 @@ window.Pages = window.Pages || {};
 
   async function process(code) {
     if (!st) return;
-    const s = Logic.studentByCode(code);
-    if (!s) { feedback('error'); showResult('unknown', null, { code }); return; }
+    const card = Logic.readCard(code);
+    const s = card.student;
+    if (!s) { feedback('error'); showResult('unknown', null, { code: card.foreign ? '' : code, foreign: card.foreign }); return; }
     if (s.status && s.status !== 'active') { feedback('error'); showResult('inactive', s, {}); return; }
     const r = await Logic.recordScan(s);
     feedback(r.status === 'marked' ? 'ok' : 'already');

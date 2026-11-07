@@ -501,6 +501,8 @@
       return B.pendingCount() ? 'pending' : 'synced';
     },
     userEmail() { return B.userEmail(); },
+    // The institute's account id (cloud mode only) — used in ID card profile links
+    userId() { return CLOUD && Cloud.user ? Cloud.user.id : ''; },
     accountStatus() { return CLOUD ? Cloud.status : 'approved'; },
     accountNote() { return (CLOUD && Cloud.profile && Cloud.profile.status_note) || ''; },
     pendingCount() { return B.pendingCount(); },

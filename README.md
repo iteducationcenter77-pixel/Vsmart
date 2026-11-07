@@ -81,7 +81,8 @@ People who sign up with Google are asked for their institute name on first login
 ## Student ID cards & scan attendance
 
 - **ID cards:** every student has one. Open a student → **ID card** to preview and download it (PDF or image). Adding a new student opens their card straight away. **Students → ID cards** downloads cards for everyone in the current list in one PDF: either A4 sheets (9 per page, with cut lines, fronts and backs on alternate pages for double-sided printing) or one card per page (for PVC card printers).
-- **Card design:** standard CR80 size (54 × 86 mm). The front has the institute logo and name, the student's photo, name, course, ID, batch, mobile and validity, plus a barcode. The back has a QR code, emergency contact, the card note, a return address, the issue date and the authorised signature. Choose the colour, upload a signature and edit the back note under **Settings → Student ID cards**. Cards are generated from the student's current details each time, so nothing extra is stored.
+- **Card design:** standard CR80 size (54 × 86 mm). The front has the institute logo and name, the student's photo, name, course, ID, batch, mobile and validity, plus a **barcode for attendance**. The back has a **QR code that opens the student's profile**, emergency contact, the card note, a return address, the issue date and the authorised signature. Text that is too long is shrunk slightly rather than cut off.
+- **QR profile (`/verify`):** scanning the QR code with any phone camera opens a page showing the student's photo, name, ID, course, batch, admission date, validity and status, checked live against the institute's records. It shows nothing else (no fees, phone numbers or address), works only for approved institutes, and says "Student not found" once a student is deleted. It is served by the database function `card_profile()` in `supabase/schema.sql`. The Scan Attendance page accepts the QR code too. Choose the colour, upload a signature and edit the back note under **Settings → Student ID cards**. Cards are generated from the student's current details each time, so nothing extra is stored.
 - **Scan Attendance** (sidebar, or **Attendance → Scan ID cards**) works with:
   - a laptop webcam, an external USB camera or a phone camera: it reads the barcode or QR code automatically, with no button to press. Pick the camera from the list if there is more than one.
   - USB or Bluetooth barcode scanners: just scan; they type the ID and press Enter for you.
@@ -144,6 +145,7 @@ The APK loads your live site, so every push to `main` updates the app on every p
 | `js/logic.js` | Fee, dues and attendance rules |
 | `js/pages/*.js` | Dashboard, Students, Fees, Attendance, Scan Attendance, Setup pages |
 | `js/idcard.js` | Student ID card drawing, PDF / image download |
+| `verify.html` | Public student profile opened by the ID card QR code |
 | `supabase/schema.sql` | Database tables, access rules and the sign-up trigger |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and Android install |
 | `vercel.json` | Hosting headers |
