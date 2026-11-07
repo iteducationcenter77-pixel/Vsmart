@@ -1,12 +1,12 @@
 /* Service worker: makes the app installable and usable offline.
  * App files: network-first (so updates show immediately), cache fallback when offline.
  * Firebase SDK & fonts: cache-first. Firestore/Auth API traffic is never cached. */
-const CACHE = 'ims-v7';
+const CACHE = 'ims-v8';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
   './js/config.js', './js/ui.js', './js/store.js', './js/logic.js', './js/idcard.js', './js/app.js',
   './js/pages/dashboard.js', './js/pages/students.js', './js/pages/fees.js',
-  './js/pages/attendance.js', './js/pages/scan.js', './js/pages/manage.js', './js/auth.js',
+  './js/pages/attendance.js', './js/pages/scan.js', './js/pages/exams.js', './js/pages/manage.js', './js/auth.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];
 

@@ -7,7 +7,7 @@
  * Pages only ever talk to window.Store.
  */
 (function () {
-  const COLS = ['students', 'courses', 'batches', 'payments', 'attendance', 'expenses'];
+  const COLS = ['students', 'courses', 'batches', 'payments', 'attendance', 'expenses', 'exams'];
   const cfg = window.IMS_CONFIG || {};
   const SB = cfg.supabase || {};
   const CLOUD = !!(SB.url && SB.anonKey);

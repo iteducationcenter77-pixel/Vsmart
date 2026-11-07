@@ -586,6 +586,71 @@ table.table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .scan-tag { display: inline-flex; align-items: center; gap: 3px; color: var(--success); font-weight: 500; }
 .scan-tag svg.i { width: 13px; height: 13px; }
 
+/* ───────────────────────── Exams ───────────────────────── */
+.exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.exam-card { text-align: left; padding: 18px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, box-shadow .15s; }
+.exam-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow); }
+.exam-card h3 { font-size: 16px; margin-top: 6px; }
+.exam-ic { width: 40px; height: 40px; border-radius: 12px; background: var(--accent-weak); color: var(--accent); display: grid; place-items: center; }
+.exam-meter { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin: 8px 0 4px; }
+.exam-meter div { height: 100%; background: var(--success); border-radius: inherit; }
+.exam-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-bottom: 16px; }
+.exam-facts > div { padding: 14px 18px; border-right: 1px solid var(--border); min-width: 0; }
+.exam-facts > div:last-child { border-right: 0; }
+.exam-facts .l { font-size: 12.5px; color: var(--muted); }
+.exam-facts .v { font-weight: 600; margin-top: 2px; }
+.exam-kpis { margin-bottom: 20px; }
+.exam-row-end { display: flex; align-items: center; gap: 14px; flex: none; }
+.exam-state { text-align: right; }
+.check-row { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; padding: 4px 0; }
+.course-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 2px 12px; padding: 2px 0 0 26px; }
+.sched { display: flex; flex-direction: column; gap: 8px; }
+.sched:empty { display: none; }
+.sched-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+
+/* Admit card — a printed document, always on white */
+.admit-sheet { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.admit { --ink: #0f172a; --soft: #475569; --rule: #dbe2ea; position: relative; width: 100%; max-width: 760px; background: #fff; color: var(--ink); border: 1px solid #cbd5e1; border-radius: 4px; padding: 18px 20px 10px; font-size: 12.5px; line-height: 1.4; box-shadow: var(--shadow); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.admit::before { content: ""; position: absolute; inset: 5px; border: 1.5px solid var(--ad); border-radius: 2px; pointer-events: none; }
+.ad-head { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--ad); }
+.ad-logo { width: 54px; height: 54px; flex: none; border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: #fff; border: 1px solid var(--rule); color: var(--ad); font-weight: 700; font-size: 18px; }
+.ad-logo img { width: 100%; height: 100%; object-fit: contain; }
+.ad-inst { flex: 1; min-width: 0; }
+.ad-inst h2 { margin: 0 0 2px; font-size: 17px; line-height: 1.2; color: var(--ad); text-transform: uppercase; letter-spacing: .02em; }
+.ad-inst div { font-size: 11px; color: var(--soft); }
+.ad-title { flex: none; max-width: 40%; text-align: center; }
+.ad-title span { display: inline-block; background: var(--ad); color: #fff; font-weight: 700; letter-spacing: .2em; font-size: 12px; padding: 4px 12px 4px 14px; border-radius: 3px; }
+.ad-title b { display: block; margin-top: 5px; font-size: 13px; line-height: 1.25; }
+.ad-title small { display: block; color: var(--soft); font-size: 11px; }
+.ad-body { display: flex; gap: 14px; margin-top: 10px; }
+.ad-info { flex: 1; min-width: 0; border-collapse: collapse; }
+.ad-info th { width: 1%; white-space: nowrap; text-align: left; font-weight: 500; color: var(--soft); background: #f8fafc; padding: 4px 8px; border: 1px solid var(--rule); font-size: 11.5px; }
+.ad-info td { padding: 4px 8px; border: 1px solid var(--rule); font-weight: 600; word-break: break-word; }
+.ad-info td.strong { font-size: 13.5px; font-weight: 700; }
+.ad-side { width: 108px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ad-photo { width: 100px; height: 118px; border: 1px solid #94a3b8; display: grid; place-items: center; overflow: hidden; font-size: 10px; color: #94a3b8; text-align: center; background: #fff; }
+.ad-photo img { width: 100%; height: 100%; object-fit: cover; }
+.ad-qr { width: 72px; height: 72px; }
+.ad-qr svg { display: block; width: 100%; height: 100%; }
+.ad-qr-cap { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: .1em; margin-top: -2px; }
+.ad-sched { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11.5px; }
+.ad-sched th { background: var(--ad); color: #fff; font-weight: 600; padding: 4px 8px; text-align: left; }
+.ad-sched td { border: 1px solid var(--rule); padding: 4px 8px; }
+.ad-sched .ad-inv { width: 17%; }
+.ad-foot { display: flex; gap: 16px; margin-top: 10px; align-items: flex-end; }
+.ad-rules { flex: 1; min-width: 0; font-size: 10.5px; color: #334155; }
+.ad-rules ol { margin: 6px 0 0; padding-left: 16px; }
+.ad-rules li { margin: 1px 0; }
+.ad-ok, .ad-perm { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+.ad-ok { color: #067647; background: #ecfdf3; border: 1px solid #abefc6; }
+.ad-perm { color: #3730a3; background: #eef0ff; border: 1px solid #c7d2fe; }
+.ad-ok svg.i, .ad-perm svg.i { width: 13px; height: 13px; }
+.ad-signs { display: flex; gap: 14px; flex: none; }
+.ad-sign { width: 128px; text-align: center; font-size: 10.5px; color: var(--soft); }
+.ad-sig { height: 34px; border-bottom: 1px solid #64748b; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 3px; }
+.ad-sig img { max-width: 118px; max-height: 32px; object-fit: contain; }
+.ad-issued { margin-top: 6px; text-align: right; font-size: 9.5px; color: #94a3b8; }
+
 /* Full-screen attendance station */
 body.kiosk .sidebar, body.kiosk .topbar, body.kiosk .bottom-nav { display: none !important; }
 body.kiosk .main { margin-left: 0; }
@@ -697,6 +762,30 @@ body.kiosk .view { max-width: 1400px; padding: 24px; }
   .receipt .r-title { text-align: left; }
   .receipt .r-meta { grid-template-columns: 1fr; }
   .idc-preview { gap: 12px; }
+  .exam-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .exam-facts > div:nth-child(2) { border-right: 0; }
+  .exam-facts > div:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .exam-row { flex-wrap: wrap; }
+  .exam-row-end { width: 100%; justify-content: space-between; padding-left: 50px; }
+  .exam-state { text-align: left; }
+  .sched-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+  .sched-row [name=subject] { grid-column: 1 / -1; }
+  .admit { padding: 14px 14px 8px; font-size: 12px; }
+  .ad-head { flex-wrap: wrap; }
+  .ad-title { max-width: none; width: 100%; text-align: left; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+  .ad-title b { margin: 0; }
+  .ad-body { flex-direction: column; }
+  .ad-side { order: -1; width: auto; flex-direction: row; align-items: flex-end; flex-wrap: wrap; gap: 6px 12px; }
+  .ad-photo { width: 80px; height: 96px; }
+  .ad-qr { width: 64px; height: 64px; }
+  .ad-qr-cap { align-self: center; }
+  .ad-info, .ad-info tbody { display: block; }
+  .ad-info tr { display: grid; grid-template-columns: 116px minmax(0, 1fr); }
+  .ad-info th { white-space: normal; }
+  .ad-info th, .ad-info td { display: block; width: auto; margin: -1px 0 0 -1px; }
+  .ad-sched .ad-inv { display: none; }
+  .ad-foot { flex-direction: column; align-items: stretch; }
+  .ad-signs { justify-content: space-between; }
   .scan-result { min-height: 0; padding: 16px; }
   .scan-photo { width: 104px; height: 104px; }
   .scan-name { font-size: 21px; }
@@ -717,5 +806,27 @@ body.kiosk .view { max-width: 1400px; padding: 24px; }
   .main { margin: 0; }
   .view { padding: 0; max-width: none; }
   .receipt { border: 0; padding: 0; max-width: none; }
+  /* Admit cards: two per A4 page (smaller page margins, tighter spacing) */
+  @page admits { size: A4; margin: 8mm; }
+  .admit-sheet { display: block; page: admits; }
+  .admit { max-width: none; box-shadow: none; border-radius: 0; margin: 0 0 4mm; padding: 4mm 5mm 1.5mm; font-size: 10.5px; break-inside: avoid; page-break-inside: avoid; }
+  .admit:nth-child(2n) { break-after: page; page-break-after: always; margin-bottom: 0; }
+  .admit:last-child { break-after: auto; page-break-after: auto; }
+  .ad-head { padding-bottom: 2.5mm; }
+  .ad-logo { width: 46px; height: 46px; }
+  .ad-inst h2 { font-size: 15px; }
+  .ad-inst div, .ad-title small { font-size: 10px; }
+  .ad-body, .ad-sched, .ad-foot { margin-top: 2.5mm; }
+  .ad-info th, .ad-info td, .ad-sched th, .ad-sched td { padding: 2px 6px; }
+  .ad-info th, .ad-sched { font-size: 10px; }
+  .ad-info td.strong { font-size: 12px; }
+  .ad-side { width: 92px; gap: 4px; }
+  .ad-photo { width: 84px; height: 100px; }
+  .ad-qr { width: 56px; height: 56px; }
+  .ad-rules { font-size: 9.5px; }
+  .ad-rules ol { margin-top: 3px; }
+  .ad-sig { height: 26px; }
+  .ad-sign { font-size: 9.5px; }
+  .ad-issued { margin-top: 2px; font-size: 8.5px; }
   .card { box-shadow: none; break-inside: avoid; }
 }

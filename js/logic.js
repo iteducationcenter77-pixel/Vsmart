@@ -232,11 +232,52 @@
     return out.sort((x, y) => (y.at || '').localeCompare(x.at || ''));
   }
 
+  // ── Exams & admit cards ──
+  // A student may sit an exam (and get an admit card) once their fees up to the month of the
+  // fee deadline are paid — or when the institute has allowed them anyway (exam.permits).
+  const examCourses = (e) => (e.courseIds || []).filter(Boolean);
+  const examStudents = (e) => {
+    const cs = examCourses(e);
+    return activeStudents().filter((s) => !cs.length || cs.includes(s.courseId));
+  };
+  const examFeeMonth = (e) => UI.monthOf(e.duesDeadline || e.startDate || UI.today());
+
+  function examStanding(e, s) {
+    const due = dues(s, examFeeMonth(e)).total;
+    const permit = (e.permits || {})[s.id] || null;
+    const late = !!e.duesDeadline && UI.today() > e.duesDeadline;
+    const state = due <= 0 ? 'cleared' : permit ? 'permitted' : late ? 'blocked' : 'pending';
+    return { due, permit, state, eligible: state === 'cleared' || state === 'permitted' };
+  }
+
+  // Where the exam stands today
+  function examPhase(e) {
+    const t = UI.today();
+    const end = e.endDate || e.startDate;
+    if (end && t > end) return { key: 'done', label: 'Completed', cls: '' };
+    if (e.startDate && t >= e.startDate) return { key: 'live', label: 'In progress', cls: 'badge-accent' };
+    if (e.duesDeadline && t > e.duesDeadline) return { key: 'ready', label: 'Admit cards out', cls: 'badge-success' };
+    return { key: 'fees', label: 'Fee collection', cls: 'badge-warning' };
+  }
+
+  // Roll numbers are given once, in student-ID order, and kept on the exam
+  function planRolls(e, list) {
+    const rolls = { ...(e.rolls || {}) };
+    let max = 0;
+    Object.values(rolls).forEach((r) => { const mm = String(r).match(/(\d+)$/); if (mm) max = Math.max(max, parseInt(mm[1], 10)); });
+    let changed = false;
+    list.slice()
+      .sort((a, b) => String(a.code || '').localeCompare(String(b.code || ''), undefined, { numeric: true }))
+      .forEach((s) => { if (!rolls[s.id]) { rolls[s.id] = (e.rollPrefix || '') + String(++max).padStart(3, '0'); changed = true; } });
+    return { rolls, changed };
+  }
+
   window.Logic = {
     index, courseOf, batchOf, students, activeStudents, endMonth, billableMonths, ledger, dues,
     admissionPaid, paymentsOf, totalPaidBy, monthReport, paymentsInMonth, collectedIn, expensesIn,
     collectedUpTo, expensesUpTo, netUpTo,
     nextReceiptNo, nextStudentCode, attId, attendanceFor, attendanceStats, attendanceOnDate, studentsInBatch, byDateDesc,
-    cardValue, studentByCode, profileUrl, parseProfileUrl, readCard, markOn, recordScan, scansOn
+    cardValue, studentByCode, profileUrl, parseProfileUrl, readCard, markOn, recordScan, scansOn,
+    examCourses, examStudents, examFeeMonth, examStanding, examPhase, planRolls
   };
 })();

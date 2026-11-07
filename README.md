@@ -78,6 +78,15 @@ People who sign up with Google are asked for their institute name on first login
 - **Institute logo:** Settings → Institute profile → Upload logo. Printed on every fee receipt.
 - **Exports:** Students, Payments, Reports and the Attendance register all download CSV files for Excel.
 
+## Exams & admit cards
+
+- **Create an exam** (sidebar → **Exams** → **New exam**): give it a name (quick picks: Unit Test, Half Yearly, Annual …), start and end dates, and a **"Clear fees by" deadline**. Then choose which courses sit it (or all), and optionally the reporting time, exam centre, a timetable of papers and the instructions printed on the admit card.
+- **Who gets an admit card:** active students of those courses whose fees **up to the deadline month** are fully paid. When a student pays, their admit card is ready at once. Students who still owe show as *Dues pending*, then *Not eligible* once the deadline passes.
+- **The institute decides:** **Allow** lets a student sit the exam with dues (enter a reason), and **Remove** withdraws it. The dues stay on the student's fee ledger. **Collect** opens fee collection for that student.
+- **Admit cards** show the institute details, roll number, student ID, name, guardian, course, batch, exam centre, reporting time, exam dates, photo, a QR code to verify the student, the timetable, fee status ("Fees cleared" or "Permitted by the institute"), instructions and signature lines. They print **two per A4 page** (Print / Save PDF), one student or the whole class at once.
+- **Roll numbers** are given automatically the first time a student's admit card is opened (e.g. `HYE26-001`, in student-ID order) and stay fixed for that exam.
+- **Exams page** shows the totals (students, cleared, dues pending with the amount outstanding, allowed), search and filters, and a CSV export.
+
 ## Student ID cards & scan attendance
 
 - **ID cards:** every student has one. Open a student → **ID card** to preview and download it (PDF or image). Adding a new student opens their card straight away. **Students → ID cards** downloads cards for everyone in the current list in one PDF: either A4 sheets (9 per page, with cut lines, fronts and backs on alternate pages for double-sided printing) or one card per page (for PVC card printers).
@@ -94,7 +103,7 @@ People who sign up with Google are asked for their institute name on first login
 
 [`supabase/schema.sql`](supabase/schema.sql) builds everything:
 - **`profiles`:** one row per account.
-- **Data tables:** `students`, `courses`, `batches`, `payments`, `attendance`, `expenses` and `settings`. Each has `owner` (the account), `id` and `data jsonb`.
+- **Data tables:** `students`, `courses`, `batches`, `payments`, `attendance`, `expenses`, `exams` and `settings`. Each has `owner` (the account), `id` and `data jsonb`.
 - **Access rules:** owner-only, and only while that account's status is `approved`.
 - **`app_superadmins`:** who may open `/admin`; `admin_institutes()` and `admin_set_status()` are the only ways in.
 - **Live updates:** turned on for every data table.
@@ -143,7 +152,7 @@ The APK loads your live site, so every push to `main` updates the app on every p
 | `admin.html`, `js/admin.js` | Administrator console at `/admin` |
 | `js/store.js` | Data layer: Supabase auth and sync, offline cache and upload queue |
 | `js/logic.js` | Fee, dues and attendance rules |
-| `js/pages/*.js` | Dashboard, Students, Fees, Attendance, Scan Attendance, Setup pages |
+| `js/pages/*.js` | Dashboard, Students, Fees, Attendance, Scan Attendance, Exams & admit cards, Setup pages |
 | `js/idcard.js` | Student ID card drawing, PDF / image download |
 | `verify.html` | Public student profile opened by the ID card QR code |
 | `supabase/schema.sql` | Database tables, access rules and the sign-up trigger |

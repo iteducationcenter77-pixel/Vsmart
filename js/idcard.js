@@ -609,5 +609,14 @@
     return [img(f), img(b)];
   }
 
-  window.IDCard = { open, openBulk, preview, COLORS, DEFAULT_COLOR };
+  // QR code as an SVG tag (used on admit cards)
+  async function qrSvg(value) {
+    await UI.loadScript(LIBS.qr);
+    const q = window.qrcode(0, value.length > 40 ? 'L' : 'M');
+    q.addData(value);
+    q.make();
+    return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  }
+
+  window.IDCard = { open, openBulk, preview, qrSvg, COLORS, DEFAULT_COLOR };
 })();

@@ -7,6 +7,7 @@
     { id: 'students', label: 'Students', icon: 'users' },
     { id: 'attendance', label: 'Attendance', icon: 'calendar' },
     { id: 'scan', label: 'Scan Attendance', icon: 'scan' },
+    { id: 'exams', label: 'Exams', icon: 'exam' },
     { id: 'collect', label: 'Collect Fee', icon: 'wallet' },
     { id: 'payments', label: 'Payments', icon: 'receipt' },
     { id: 'reports', label: 'Reports', icon: 'chart' },
@@ -23,7 +24,7 @@
     { id: 'more', label: 'Menu', icon: 'menu' }
   ];
   // Sub-pages highlight their parent in the nav
-  const PARENT = { student: 'students', receipt: 'payments' };
+  const PARENT = { student: 'students', receipt: 'payments', exam: 'exams', admit: 'exams' };
 
   const App = window.App = {
     dirty: false,     // set by pages holding unsaved input; blocks live re-render

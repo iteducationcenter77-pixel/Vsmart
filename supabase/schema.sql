@@ -70,7 +70,7 @@ as $$ select exists (select 1 from public.profiles where id = auth.uid() and sta
 do $$
 declare t text;
 begin
-  foreach t in array array['students', 'courses', 'batches', 'payments', 'attendance', 'expenses', 'settings'] loop
+  foreach t in array array['students', 'courses', 'batches', 'payments', 'attendance', 'expenses', 'exams', 'settings'] loop
     execute format(
       'create table if not exists public.%I (
          owner      uuid not null default auth.uid() references auth.users (id) on delete cascade,
