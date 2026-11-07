@@ -78,6 +78,17 @@ People who sign up with Google are asked for their institute name on first login
 - **Institute logo:** Settings → Institute profile → Upload logo. Printed on every fee receipt.
 - **Exports:** Students, Payments, Reports and the Attendance register all download CSV files for Excel.
 
+## Student ID cards & scan attendance
+
+- **ID cards:** every student has one. Open a student → **ID card** to preview and download it (PDF or image). Adding a new student opens their card straight away. **Students → ID cards** downloads cards for everyone in the current list in one PDF: either A4 sheets (9 per page, with cut lines, fronts and backs on alternate pages for double-sided printing) or one card per page (for PVC card printers).
+- **Card design:** standard CR80 size (54 × 86 mm). The front has the institute logo and name, the student's photo, name, course, ID, batch, mobile and validity, plus a barcode. The back has a QR code, emergency contact, the card note, a return address, the issue date and the authorised signature. Choose the colour, upload a signature and edit the back note under **Settings → Student ID cards**. Cards are generated from the student's current details each time, so nothing extra is stored.
+- **Scan Attendance** (sidebar, or **Attendance → Scan ID cards**) works with:
+  - a laptop webcam, an external USB camera or a phone camera: it reads the barcode or QR code automatically, with no button to press. Pick the camera from the list if there is more than one.
+  - USB or Bluetooth barcode scanners: just scan; they type the ID and press Enter for you.
+  - typing the student ID and pressing **Mark**.
+- **One scan a day:** the first scan marks the student **Present** on their batch's sheet for today and stores the time. A second scan shows "Attendance already recorded". Cards for unknown IDs, and students marked Completed or Dropped, are refused. Scanned students appear on the normal Attendance page with their scan time, and manual marking still works as before.
+- **Full screen** turns a laptop or tablet into an attendance kiosk. Sound and vibration confirm each scan (sound can be switched off).
+
 ## Database
 
 [`supabase/schema.sql`](supabase/schema.sql) builds everything:
@@ -131,7 +142,8 @@ The APK loads your live site, so every push to `main` updates the app on every p
 | `admin.html`, `js/admin.js` | Administrator console at `/admin` |
 | `js/store.js` | Data layer: Supabase auth and sync, offline cache and upload queue |
 | `js/logic.js` | Fee, dues and attendance rules |
-| `js/pages/*.js` | Dashboard, Students, Fees, Attendance, Setup pages |
+| `js/pages/*.js` | Dashboard, Students, Fees, Attendance, Scan Attendance, Setup pages |
+| `js/idcard.js` | Student ID card drawing, PDF / image download |
 | `supabase/schema.sql` | Database tables, access rules and the sign-up trigger |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and Android install |
 | `vercel.json` | Hosting headers |

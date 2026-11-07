@@ -42,7 +42,10 @@ window.Pages = window.Pages || {};
       el.innerHTML = `
         <div class="page-head">
           <div><h1>Attendance</h1><p class="sub">${state.view === 'mark' ? `${UI.weekday(state.date)}, ${UI.fmtDate(state.date)}` : UI.monthLabel(state.month, true)}</p></div>
-          <div class="seg"><button class="${state.view === 'mark' ? 'on' : ''}" data-view="mark">Mark</button><button class="${state.view === 'register' ? 'on' : ''}" data-view="register">Register</button></div>
+          <div class="page-actions">
+            <div class="seg"><button class="${state.view === 'mark' ? 'on' : ''}" data-view="mark">Mark</button><button class="${state.view === 'register' ? 'on' : ''}" data-view="register">Register</button></div>
+            <button class="btn btn-primary" data-nav="scan">${icon('scan')} Scan ID cards</button>
+          </div>
         </div>
         <div class="toolbar">
           ${state.view === 'mark'
@@ -94,7 +97,7 @@ window.Pages = window.Pages || {};
           <div class="list">
             ${list.map((s) => `<div class="att-row" data-sid="${s.id}">
               ${UI.avatar(s.name, s.photo, 'sm')}
-              <div class="li-main"><div class="li-title">${esc(s.name)}</div><div class="li-sub">${esc(s.code || '')}</div></div>
+              <div class="li-main"><div class="li-title">${esc(s.name)}</div><div class="li-sub">${esc(s.code || '')}${existing && existing.scans && existing.scans[s.id] ? ` · <span class="scan-tag">${icon('scan')} Scanned ${esc(UI.fmtTime(existing.scans[s.id]))}</span>` : ''}</div></div>
               <div class="att-toggle">${['P', 'A', 'L'].map((k) => `<button class="${k} ${state.recs[s.id] === k ? 'on' : ''}" data-st="${k}" aria-label="${{ P: 'Present', A: 'Absent', L: 'Late' }[k]}">${k}</button>`).join('')}</div>
             </div>`).join('')}
           </div>

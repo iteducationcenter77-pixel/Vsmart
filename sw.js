@@ -1,12 +1,12 @@
 /* Service worker: makes the app installable and usable offline.
  * App files: network-first (so updates show immediately), cache fallback when offline.
  * Firebase SDK & fonts: cache-first. Firestore/Auth API traffic is never cached. */
-const CACHE = 'ims-v6';
+const CACHE = 'ims-v7';
 const ASSETS = [
   './', './index.html', './manifest.webmanifest', './css/styles.css',
-  './js/config.js', './js/ui.js', './js/store.js', './js/logic.js', './js/app.js',
+  './js/config.js', './js/ui.js', './js/store.js', './js/logic.js', './js/idcard.js', './js/app.js',
   './js/pages/dashboard.js', './js/pages/students.js', './js/pages/fees.js',
-  './js/pages/attendance.js', './js/pages/manage.js', './js/auth.js',
+  './js/pages/attendance.js', './js/pages/scan.js', './js/pages/manage.js', './js/auth.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];
 
@@ -25,7 +25,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
-  const staticCdn = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname);
+  // Pinned library versions (Supabase, ID cards, barcode reader + its WebAssembly) and fonts
+  const staticCdn = ['cdn.jsdelivr.net', 'fastly.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname);
   if (!sameOrigin && !staticCdn) return;
 
   if (sameOrigin) {

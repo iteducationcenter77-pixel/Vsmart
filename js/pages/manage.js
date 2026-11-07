@@ -235,6 +235,38 @@ window.Pages = window.Pages || {};
             <div class="card-foot row" style="justify-content:flex-end"><button class="btn btn-primary" id="profSave">Save profile</button></div>
           </div>
 
+          <div class="card">
+            <div class="card-head"><h3>Student ID cards</h3><span class="muted small">Logo, name, address and phone come from the profile above</span></div>
+            <div class="card-body idc-settings">
+              <form id="idcForm" class="stack" style="gap:16px">
+                <div class="field"><label>Card colour</label>
+                  <div class="swatches">
+                    ${IDCard.COLORS.map((c) => `<label class="swatch" style="--sw:${c}"><input type="radio" name="idColor" value="${c}" ${(s.idColor || IDCard.DEFAULT_COLOR) === c ? 'checked' : ''}><span></span></label>`).join('')}
+                    <label class="swatch custom" title="Custom colour"><input type="color" id="idColorCustom" value="${esc(s.idColor || IDCard.DEFAULT_COLOR)}"><span>${icon('plus')}</span></label>
+                  </div>
+                </div>
+                <div class="field"><label>Authorised signature</label>
+                  <div class="row-wrap">
+                    <div class="sig-preview" id="sigPreview">${s.idSignature ? `<img src="${esc(s.idSignature)}" alt="Signature">` : '<span class="faint small">No signature</span>'}</div>
+                    <label class="btn btn-sm" style="cursor:pointer">${icon('upload')} Upload
+                      <input type="file" id="sigIn" accept="image/png,image/jpeg,image/webp" hidden></label>
+                    <button type="button" class="btn btn-sm btn-ghost" id="sigRm" ${s.idSignature ? '' : 'hidden'}>Remove</button>
+                  </div>
+                  <span class="hint">Optional. Sign on white paper and take a photo, or use a PNG with a transparent background.</span>
+                </div>
+                <div class="field"><label>Note on the back of the card</label>
+                  <textarea class="textarea" name="idNote" rows="3" placeholder="This card is the property of ${esc(s.name)}. Carry it at all times and show it at the entrance to mark your attendance.">${esc(s.idNote || '')}</textarea>
+                  <span class="hint">Leave empty to use the standard text. The institute address is added automatically.</span>
+                </div>
+                <div><button type="button" class="btn btn-primary" id="idcSave">Save ID card design</button></div>
+              </form>
+              <div class="idc-sample">
+                <div class="idc-sample-cards" id="idcSample"><div class="idc-loading"><div class="spinner"></div></div></div>
+                <span class="hint">Preview${Logic.activeStudents()[0] ? ` · ${esc(Logic.activeStudents()[0].name)}` : ''}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="card card-body row" style="flex-wrap:wrap">
             <div class="li-main"><div class="strong">Appearance</div><div class="muted small">Saved on this device</div></div>
             <div class="seg" id="themeSeg">${[['system', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([k, t]) => `<button class="${theme === k ? 'on' : ''}" data-theme="${k}">${t}</button>`).join('')}</div>
@@ -312,6 +344,60 @@ window.Pages = window.Pages || {};
         App.dirty = false;
         UI.toast('Profile saved');
       });
+
+      // ── ID card design ──
+      const idf = $('#idcForm', el);
+      const sampleStudent = () => Logic.activeStudents().find((x) => x.photo) || Logic.activeStudents()[0] || {
+        id: 'sample', name: 'Student Name', code: (s.studentPrefix || 'STU-') + '0001', phone: '98765 43210',
+        guardianName: 'Guardian Name', guardianPhone: '91234 56789', admissionDate: UI.today()
+      };
+      let previewSeq = 0;
+      const chosenColor = () => { const r = idf.querySelector('input[name=idColor]:checked'); return r ? r.value : $('#idColorCustom', el).value; };
+      // Preview shows unsaved colour / note choices too
+      const drawSample = async () => {
+        const seq = ++previewSeq;
+        const box = $('#idcSample', el);
+        if (!box) return;
+        try {
+          const [f, b] = await IDCard.preview(sampleStudent(), { idColor: chosenColor(), idNote: idf.idNote.value.trim() });
+          if (seq === previewSeq && box.isConnected) box.innerHTML = `<img src="${f}" alt="ID card front"><img src="${b}" alt="ID card back">`;
+        } catch (e) { if (box.isConnected) box.innerHTML = `<span class="muted small">${esc(e.message)}</span>`; }
+      };
+      let noteTimer;
+      idf.addEventListener('change', (e) => { if (e.target.name === 'idColor') drawSample(); });
+      idf.addEventListener('input', (e) => {
+        if (e.target.name !== 'idNote') return;
+        App.dirty = true;
+        clearTimeout(noteTimer);
+        noteTimer = setTimeout(drawSample, 400);
+      });
+      $('#idColorCustom', el).addEventListener('input', () => {
+        idf.querySelectorAll('input[name=idColor]').forEach((r) => (r.checked = false));
+        drawSample();
+      });
+      $('#idcSave', el).addEventListener('click', async () => {
+        await Store.saveSettings({ idColor: chosenColor(), idNote: idf.idNote.value.trim() });
+        App.dirty = false;
+        UI.toast('ID card design saved');
+      });
+      const setSig = (data) => {
+        $('#sigPreview', el).innerHTML = data ? `<img src="${data}" alt="Signature">` : '<span class="faint small">No signature</span>';
+        $('#sigRm', el).hidden = !data;
+        drawSample();
+      };
+      $('#sigIn', el).addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+          const data = await UI.readImage(file, { max: 400 });
+          await Store.saveSettings({ idSignature: data });
+          setSig(data);
+          UI.toast('Signature added to ID cards');
+        } catch (ex) { UI.toast(ex.message, 'error'); }
+      });
+      $('#sigRm', el).addEventListener('click', async () => { await Store.saveSettings({ idSignature: '' }); setSig(''); UI.toast('Signature removed'); });
+      drawSample();
 
       $$('[data-theme]', el).forEach((b) => b.addEventListener('click', () => {
         App.setTheme(b.dataset.theme);

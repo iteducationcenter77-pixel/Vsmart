@@ -6,6 +6,7 @@
     { id: 'dashboard', label: 'Dashboard', icon: 'home' },
     { id: 'students', label: 'Students', icon: 'users' },
     { id: 'attendance', label: 'Attendance', icon: 'calendar' },
+    { id: 'scan', label: 'Scan Attendance', icon: 'scan' },
     { id: 'collect', label: 'Collect Fee', icon: 'wallet' },
     { id: 'payments', label: 'Payments', icon: 'receipt' },
     { id: 'reports', label: 'Reports', icon: 'chart' },
@@ -59,6 +60,9 @@
     const page = window.Pages[r.name];
     if (!page) { App.go('dashboard'); return; }
     const changed = !App.route || App.route.name !== r.name || App.route.params.join('/') !== r.params.join('/');
+    // Let a live page (e.g. the scanner's camera) clean up before another page replaces it
+    const prev = App.route && window.Pages[App.route.name];
+    if (changed && prev && prev !== page && prev.leave) prev.leave();
     App.route = r;
     if (changed) App.dirty = false;
     const y = window.scrollY;
@@ -85,7 +89,11 @@
 
   function onDataChange() {
     refreshChrome();
-    if (!$('#app').hidden && !App.dirty) render(true);
+    if ($('#app').hidden) return;
+    // Pages with live parts (camera) update themselves instead of being redrawn
+    const page = App.route && window.Pages[App.route.name];
+    if (page && page.onData) { page.onData(); return; }
+    if (!App.dirty) render(true);
   }
 
   // ── Chrome: nav, brand, sync status ──

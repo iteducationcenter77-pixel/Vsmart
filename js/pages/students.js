@@ -62,6 +62,7 @@ window.Pages = window.Pages || {};
         <div class="page-head">
           <div><h1>Students</h1><p class="sub">${count('active')} active · ${all.length} total</p></div>
           <div class="page-actions">
+            <button class="btn" data-idcards>${icon('idcard')} <span class="hide-sm">ID cards</span></button>
             <button class="btn" data-export>${icon('download')} <span class="hide-sm">Export</span></button>
             <button class="btn btn-primary" data-add>${icon('plus')} Add student</button>
           </div>
@@ -86,6 +87,10 @@ window.Pages = window.Pages || {};
       $('#stuCourse', el).addEventListener('change', (e) => { filt.course = e.target.value; filt.batch = ''; this.render(el); });
       $('#stuBatch', el).addEventListener('change', (e) => { filt.batch = e.target.value; this.render(el); });
       $$('[data-st]', el).forEach((c) => c.addEventListener('click', () => { filt.status = c.dataset.st; this.render(el); }));
+      $('[data-idcards]', el).addEventListener('click', () => {
+        const label = { active: 'active students', dues: 'students with dues', completed: 'completed students', dropped: 'dropped students', all: 'students' }[filt.status] || 'students';
+        IDCard.openBulk(filtered(), (filt.q || filt.course || filt.batch ? 'filtered ' : '') + label);
+      });
       $('[data-export]', el).addEventListener('click', () => {
         const rows = [['ID', 'Name', 'Phone', 'Guardian', 'Guardian phone', 'Course', 'Batch', 'Admission date', 'Monthly fee', 'Status', 'Due']];
         filtered().forEach((s) => rows.push([s.code, s.name, s.phone, s.guardianName, s.guardianPhone, (Logic.courseOf(s) || {}).name, (Logic.batchOf(s) || {}).name, s.admissionDate, s.monthlyFee, s.status, Logic.dues(s).total]));
@@ -189,8 +194,8 @@ window.Pages = window.Pages || {};
             if (d.status === 'active') d.leftDate = '';
             const saved = await Store.save('students', { ...s, ...d, photo, code: s.code || Logic.nextStudentCode() });
             close();
-            UI.toast(isNew ? `${saved.name} added (${saved.code})` : 'Student updated');
-            if (isNew) App.go('student/' + saved.id); else App.rerender();
+            UI.toast(isNew ? `${saved.name} added (${saved.code}) — ID card ready` : 'Student updated');
+            if (isNew) { App.go('student/' + saved.id); setTimeout(() => IDCard.open(saved), 250); } else App.rerender();
           };
           $('[data-save]', root).addEventListener('click', save);
           f.addEventListener('submit', (e) => { e.preventDefault(); save(); });
@@ -243,6 +248,7 @@ window.Pages = window.Pages || {};
               <div class="page-actions">
                 ${s.phone ? `<a class="btn" href="tel:${esc(s.phone)}">${icon('phone')}<span class="hide-sm">Call</span></a>` : ''}
                 ${wa ? `<a class="btn" href="https://wa.me/${wa}" target="_blank" rel="noopener">${icon('message')}<span class="hide-sm">WhatsApp</span></a>` : ''}
+                <button class="btn" data-idcard>${icon('idcard')}<span class="hide-sm">ID card</span></button>
                 <button class="btn" data-edit>${icon('edit')}<span class="hide-sm">Edit</span></button>
                 <button class="btn btn-primary" data-collect>${icon('wallet')} Collect fee</button>
               </div>
@@ -335,6 +341,7 @@ window.Pages = window.Pages || {};
 
       $$('[data-tab]', el).forEach((t) => t.addEventListener('click', () => { tab = t.dataset.tab; this.render(el, [id]); }));
       $('[data-edit]', el).addEventListener('click', () => Pages.students.openForm(s));
+      $('[data-idcard]', el).addEventListener('click', () => IDCard.open(s));
       $('[data-collect]', el).addEventListener('click', () => App.go('collect?s=' + s.id));
     }
   };

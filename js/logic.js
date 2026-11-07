@@ -156,10 +156,64 @@
 
   const studentsInBatch = (batchId) => activeStudents().filter((s) => s.batchId === batchId);
 
+  // ── ID cards & scan attendance ──
+  // The ID card barcode / QR code holds the student ID (e.g. "STU-0012"); older records without one use their id.
+  const cardValue = (s) => String(s.code || s.id);
+  const norm = (v) => String(v == null ? '' : v).trim().toUpperCase();
+
+  function studentByCode(raw) {
+    const v = norm(raw);
+    if (!v) return null;
+    return Store.all('students').find((s) => norm(s.code) === v) || Store.all('students').find((s) => norm(s.id) === v) || null;
+  }
+
+  // This student's mark on `date`, from any batch sheet: { st, at } or null
+  function markOn(sid, date) {
+    let found = null;
+    for (const a of Store.all('attendance')) {
+      if (a.date !== date || !a.records || !a.records[sid]) continue;
+      const m = { st: a.records[sid], at: (a.scans || {})[sid] || '' };
+      if (m.st === 'P' || m.st === 'L') return m; // present beats an absent mark on another sheet
+      found = found || m;
+    }
+    return found;
+  }
+
+  // One scan a day. Adds the student to their batch's sheet for today as Present and keeps
+  // the scan time in `scans`. A student already marked Present / Late today is not changed.
+  async function recordScan(s, when = new Date()) {
+    const date = UI.toISO(when);
+    const prev = markOn(s.id, date);
+    if (prev && (prev.st === 'P' || prev.st === 'L')) return { status: 'already', st: prev.st, at: prev.at };
+    const batchId = s.batchId || '';
+    const id = attId(date, batchId);
+    const sheet = Store.get('attendance', id) || {};
+    const at = when.toISOString();
+    await Store.save('attendance', {
+      ...sheet, id, date, batchId,
+      records: { ...(sheet.records || {}), [s.id]: 'P' },
+      scans: { ...(sheet.scans || {}), [s.id]: at }
+    });
+    return { status: 'marked', st: 'P', at };
+  }
+
+  // Everyone who scanned in on `date`, newest first: [{ s, at, st }]
+  function scansOn(date) {
+    const out = [];
+    Store.all('attendance').filter((a) => a.date === date && a.scans).forEach((a) => {
+      Object.entries(a.scans).forEach(([sid, at]) => {
+        const s = Store.get('students', sid);
+        if (s && a.records && a.records[sid]) out.push({ s, at, st: a.records[sid] });
+      });
+    });
+    return out.sort((x, y) => (y.at || '').localeCompare(x.at || ''));
+  }
+
   window.Logic = {
     index, courseOf, batchOf, students, activeStudents, endMonth, billableMonths, ledger, dues,
     admissionPaid, paymentsOf, totalPaidBy, monthReport, paymentsInMonth, collectedIn, expensesIn,
     collectedUpTo, expensesUpTo, netUpTo,
-    nextReceiptNo, nextStudentCode, attId, attendanceFor, attendanceStats, attendanceOnDate, studentsInBatch, byDateDesc
+    nextReceiptNo, nextStudentCode, attId, attendanceFor, attendanceStats, attendanceOnDate, studentsInBatch, byDateDesc,
+    cardValue, studentByCode, markOn, recordScan, scansOn
   };
 })();
