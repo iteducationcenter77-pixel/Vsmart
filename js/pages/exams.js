@@ -77,7 +77,7 @@ window.Pages = window.Pages || {};
         <div class="field"><label class="req">Exam starts on</label><input class="input" type="date" name="startDate" value="${esc(e.startDate || '')}" required></div>
         <div class="field"><label>Exam ends on</label><input class="input" type="date" name="endDate" value="${esc(e.endDate || '')}"><span class="hint">Leave empty for a one-day exam.</span></div>
         <div class="field full"><label class="req">Clear fees by</label><input class="input" type="date" name="duesDeadline" value="${esc(e.duesDeadline || '')}" required>
-          <span class="hint" id="feeHint">Fees due up to this month must be paid to get the admit card.</span></div>
+          <span class="hint" id="feeHint">All fees up to and including the exam month must be paid to get the admit card.</span></div>
 
         <div class="form-section">Who sits this exam</div>
         <div class="field full">
@@ -110,13 +110,14 @@ window.Pages = window.Pages || {};
           f.name.focus();
         }));
         const hint = () => {
-          const d = f.duesDeadline.value;
-          $('#feeHint', root).textContent = d
-            ? `Fees up to ${UI.monthLabel(UI.monthOf(d), true)} must be paid by ${UI.fmtDate(d)} to get the admit card.`
-            : 'Fees due up to this month must be paid to get the admit card.';
+          const d = f.duesDeadline.value, start = f.startDate.value;
+          const month = start || d;
+          $('#feeHint', root).textContent = month
+            ? `All fees up to ${UI.monthLabel(UI.monthOf(month), true)}${start ? ' (the exam month)' : ''} must be paid${d ? ` by ${UI.fmtDate(d)}` : ''} to get the admit card.`
+            : 'All fees up to and including the exam month must be paid to get the admit card.';
         };
         f.duesDeadline.addEventListener('input', hint); hint();
-        f.startDate.addEventListener('change', () => { if (!f.duesDeadline.value) { f.duesDeadline.value = f.startDate.value; hint(); } });
+        f.startDate.addEventListener('change', () => { if (!f.duesDeadline.value) f.duesDeadline.value = f.startDate.value; hint(); });
         $('#allCourses', root).addEventListener('change', (ev) => { $('#coursePicks', root).hidden = ev.target.checked; });
         $('#addRow', root).addEventListener('click', () => { sched.insertAdjacentHTML('beforeend', row()); });
         sched.addEventListener('click', (ev) => { const b = ev.target.closest('[data-rm]'); if (b) b.closest('.sched-row').remove(); });
@@ -255,7 +256,7 @@ window.Pages = window.Pages || {};
 
         <div class="card exam-facts">
           <div><div class="l">Clear fees by</div><div class="v">${UI.fmtDate(e.duesDeadline)}${dl ? ` <span class="small ${dl === 'passed' ? 'muted' : ''}" style="${dl === 'passed' ? '' : 'color:var(--warning)'}">· ${dl}</span>` : ''}</div></div>
-          <div><div class="l">Fees counted up to</div><div class="v">${UI.monthLabel(Logic.examFeeMonth(e), true)}</div></div>
+          <div><div class="l">Fees to clear</div><div class="v">Up to ${UI.monthLabel(Logic.examFeeMonth(e), true)}</div></div>
           <div><div class="l">Reporting time</div><div class="v">${esc(e.reportingTime || '—')}</div></div>
           <div><div class="l">Papers</div><div class="v">${(e.schedule || []).length || '—'}</div></div>
         </div>
@@ -290,7 +291,7 @@ window.Pages = window.Pages || {};
             </div>
           </div>`;
         }).join('') : UI.empty('users', list.length ? 'No students here' : 'No students sit this exam', list.length ? 'Try a different filter.' : 'Active students of the chosen courses appear here.')}</div></div>
-        <p class="muted small" style="margin-top:10px">Students qualify once fees up to ${UI.monthLabel(Logic.examFeeMonth(e), true)} are paid — collect the fee and the admit card is ready straight away. Use <b>Allow</b> to let a student sit the exam with dues.</p>`;
+        <p class="muted small" style="margin-top:10px">Students qualify once all fees up to ${UI.monthLabel(Logic.examFeeMonth(e), true)} (the exam month) are paid — collect the fee and the admit card is ready straight away. Use <b>Allow</b> to let a student sit the exam with dues.</p>`;
 
       $('[data-edit]', el).addEventListener('click', () => examForm(e));
       $('[data-print-all]', el).addEventListener('click', () => App.go('admit/' + e.id));
@@ -393,7 +394,7 @@ window.Pages = window.Pages || {};
               <div class="row" style="align-items:flex-start;gap:14px">
                 <div class="avatar lg" style="background:var(--danger-bg);color:var(--danger)">${icon('lock')}</div>
                 <div class="li-main"><h3>Admit card on hold</h3>
-                  <p class="muted" style="margin:6px 0 16px">${esc(s.name)} has <b style="color:var(--danger)">${money(st.due)}</b> due (fees up to ${UI.monthLabel(Logic.examFeeMonth(e), true)}). The admit card is issued once the dues are cleared, or if the institute allows it.</p>
+                  <p class="muted" style="margin:6px 0 16px">${esc(s.name)} has <b style="color:var(--danger)">${money(st.due)}</b> due (fees up to ${UI.monthLabel(Logic.examFeeMonth(e), true)}, the exam month). The admit card is issued once the dues are cleared, or if the institute allows it.</p>
                   <div class="row-wrap"><button class="btn btn-primary" data-collect>${icon('wallet')} Collect fee</button><button class="btn" data-allow>${icon('check')} Allow anyway</button></div></div>
               </div>
             </div>`;

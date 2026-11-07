@@ -233,14 +233,15 @@
   }
 
   // ── Exams & admit cards ──
-  // A student may sit an exam (and get an admit card) once their fees up to the month of the
-  // fee deadline are paid — or when the institute has allowed them anyway (exam.permits).
+  // A student may sit an exam (and get an admit card) once all fees up to and including the
+  // exam month are paid — or when the institute has allowed them anyway (exam.permits).
   const examCourses = (e) => (e.courseIds || []).filter(Boolean);
   const examStudents = (e) => {
     const cs = examCourses(e);
     return activeStudents().filter((s) => !cs.length || cs.includes(s.courseId));
   };
-  const examFeeMonth = (e) => UI.monthOf(e.duesDeadline || e.startDate || UI.today());
+  // The month the exam is held (its start date) — that month's fee must be cleared too
+  const examFeeMonth = (e) => UI.monthOf(e.startDate || e.duesDeadline || UI.today());
 
   function examStanding(e, s) {
     const due = dues(s, examFeeMonth(e)).total;
